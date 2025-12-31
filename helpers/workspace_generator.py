@@ -7,7 +7,10 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from db_helper import get_workspace, get_rules, get_integrations, get_preference
+try:
+    from .db_helper import get_workspace, get_rules, get_integrations, get_preference
+except ImportError:
+    from db_helper import get_workspace, get_rules, get_integrations, get_preference
 
 
 def generate_mdc_rule(rule: dict) -> str:
