@@ -1,0 +1,55 @@
+---
+description: Database and SQL development guidelines
+globs: ["**/*.sql", "**/db/**", "**/database/**", "**/models/**"]
+ruleType: always
+---
+
+# Database Development Guidelines
+
+## SQL Style
+- Use UPPERCASE for SQL keywords
+- Use snake_case for table and column names
+- Include table aliases in JOINs
+- Format complex queries for readability
+
+## Schema Design
+- Always define PRIMARY KEY
+- Use appropriate data types
+- Add indexes for frequently queried columns
+- Use FOREIGN KEY constraints for relationships
+- Include created_at and updated_at timestamps
+
+## Security
+- ALWAYS use parameterized queries
+- Never concatenate user input into SQL
+- Limit database user permissions
+- Encrypt sensitive data at rest
+
+## Example Safe Query (Python)
+```python
+import sqlite3
+
+def get_user(db_path: str, user_id: int) -> dict | None:
+    """Fetch user by ID using parameterized query."""
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute(
+            "SELECT * FROM users WHERE id = ?",
+            (user_id,)
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+```
+
+## Migrations
+- Use versioned migration files
+- Include both up and down migrations
+- Test migrations on copy of production data
+- Back up before running migrations
+
+## Performance
+- Use EXPLAIN ANALYZE to optimize queries
+- Create indexes for JOIN and WHERE columns
+- Avoid SELECT * in production code
+- Use pagination for large result sets
+- Consider connection pooling

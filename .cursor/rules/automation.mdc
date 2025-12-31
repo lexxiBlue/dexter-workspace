@@ -1,0 +1,68 @@
+---
+description: Automation and scripting guidelines
+globs: ["**/scripts/**", "**/automation/**", "**/*_task.py"]
+ruleType: always
+---
+
+# Automation Guidelines
+
+## Script Structure
+- Use argparse or click for CLI arguments
+- Include --help documentation
+- Support --dry-run mode for testing
+- Log actions for audit trail
+
+## File Operations
+- Use pathlib for path handling
+- Always use context managers for files
+- Handle encoding explicitly (utf-8)
+- Create backups before modifying files
+
+## Windows OS Integration
+- Use subprocess for system commands
+- Handle Windows paths correctly
+- Use pywin32 for advanced Windows automation
+- Handle UAC elevation when needed
+
+## Scheduling
+- Use cron syntax for scheduling
+- Handle timezone differences
+- Log execution start/end times
+- Implement idempotent operations
+
+## Error Recovery
+- Implement checkpoints for long operations
+- Support resume from failure
+- Send notifications on failures
+- Clean up partial work on failure
+
+## Example Automation Script
+```python
+import argparse
+import logging
+from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def main():
+    parser = argparse.ArgumentParser(description="Automation task")
+    parser.add_argument("--dry-run", action="store_true", help="Preview changes")
+    parser.add_argument("--verbose", "-v", action="store_true")
+    args = parser.parse_args()
+    
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    logger.info("Starting automation task")
+    
+    if args.dry_run:
+        logger.info("[DRY RUN] Would perform action")
+        return
+    
+    # Perform actual work here
+    logger.info("Task completed successfully")
+
+if __name__ == "__main__":
+    main()
+```

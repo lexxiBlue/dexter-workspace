@@ -1,0 +1,12 @@
+{
+  "name": "dexter-workspace",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cursor IDE workspace configuration framework",
+  "scripts": {
+    "push": "node push-to-github.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.0"
+  }
+}

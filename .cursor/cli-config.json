@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "editor": {
+    "vimMode": false
+  },
+  "permissions": {
+    "allow": [
+      "Shell(ls)",
+      "Shell(cat)",
+      "Shell(echo)",
+      "Shell(python)",
+      "Shell(pip)",
+      "Shell(git)",
+      "Shell(node)",
+      "Shell(npm)"
+    ],
+    "deny": []
+  }
+}

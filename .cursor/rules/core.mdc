@@ -1,0 +1,38 @@
+---
+description: Core development guidelines for Dexter workspace
+globs: ["**/*"]
+ruleType: always
+---
+
+# Core Development Guidelines
+
+## Code Quality
+- Write clean, maintainable, well-documented code
+- Use meaningful variable and function names
+- Add comments for complex logic only
+- Follow DRY (Don't Repeat Yourself) principles
+- Prefer composition over inheritance
+
+## Error Handling
+- Always handle errors gracefully
+- Provide meaningful error messages
+- Log errors appropriately for debugging
+- Never expose sensitive information in error messages
+
+## Security
+- Never hardcode secrets or API keys
+- Use environment variables for sensitive data
+- Validate and sanitize all user inputs
+- Follow principle of least privilege
+
+## Performance
+- Optimize for readability first, then performance
+- Use caching where appropriate
+- Avoid unnecessary database queries
+- Profile before optimizing
+
+## Git Practices
+- Write clear, descriptive commit messages
+- Keep commits focused and atomic
+- Use feature branches for new work
+- Review code before merging

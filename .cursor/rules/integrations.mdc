@@ -1,0 +1,52 @@
+---
+description: API and integration development guidelines
+globs: ["**/integrations/**", "**/api/**", "**/*_client.py"]
+ruleType: always
+---
+
+# Integration Development Guidelines
+
+## Google Workspace APIs
+- Use google-api-python-client library
+- Store OAuth credentials securely
+- Handle token refresh automatically
+- Respect API rate limits
+
+### Gmail
+- Use batch requests for multiple operations
+- Handle pagination for large mailboxes
+- Parse emails properly (handle multipart)
+
+### Google Sheets
+- Use batch updates for efficiency
+- Handle sheet limits (10M cells)
+- Use named ranges when possible
+
+### Google Drive
+- Use resumable uploads for large files
+- Handle file permissions correctly
+- Use proper MIME types
+
+## HubSpot API
+- Use hubspot-api-client library
+- Handle rate limits (100 requests/10 seconds)
+- Use batch operations when available
+- Cache frequently accessed data
+
+## OpenAI API
+- Set appropriate timeouts
+- Handle rate limits with exponential backoff
+- Stream responses for long completions
+- Monitor token usage
+
+## Tavily Search API
+- Use search_depth: "advanced" for better results
+- Handle search failures gracefully
+- Cache search results when appropriate
+
+## General Best Practices
+- Use environment variables for API keys
+- Implement retry logic with backoff
+- Log API requests for debugging
+- Handle network errors gracefully
+- Validate API responses

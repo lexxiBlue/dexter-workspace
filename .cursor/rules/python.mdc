@@ -1,0 +1,53 @@
+---
+description: Python development guidelines
+globs: ["**/*.py"]
+ruleType: always
+---
+
+# Python Development Guidelines
+
+## Code Style
+- Follow PEP 8 style guide
+- Use type hints for function parameters and return values
+- Maximum line length: 88 characters (Black formatter)
+- Use snake_case for functions and variables
+- Use PascalCase for classes
+
+## Imports
+- Group imports: standard library, third-party, local
+- Use absolute imports when possible
+- Avoid wildcard imports (from module import *)
+
+## Functions
+- Keep functions small and focused
+- Use docstrings for public functions
+- Return early to reduce nesting
+- Use *args and **kwargs sparingly
+
+## Example Function
+```python
+def process_data(input_data: dict, options: dict | None = None) -> dict:
+    """Process input data with optional configuration.
+    
+    Args:
+        input_data: Dictionary containing data to process
+        options: Optional configuration dictionary
+        
+    Returns:
+        Processed data dictionary
+        
+    Raises:
+        ValueError: If input_data is empty
+    """
+    if not input_data:
+        raise ValueError("Input data cannot be empty")
+    
+    options = options or {}
+    return {"result": input_data, "options": options}
+```
+
+## Database
+- Use SQLAlchemy or sqlite3 for database operations
+- Always use parameterized queries
+- Handle connection cleanup properly
+- Use context managers for transactions

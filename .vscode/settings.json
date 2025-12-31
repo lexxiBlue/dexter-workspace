@@ -1,0 +1,17 @@
+{
+  "editor.fontSize": 14,
+  "editor.tabSize": 4,
+  "editor.formatOnSave": true,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "python.defaultInterpreterPath": "python3",
+  "[python]": {
+    "editor.tabSize": 4
+  },
+  "[javascript]": {
+    "editor.tabSize": 2
+  },
+  "[typescript]": {
+    "editor.tabSize": 2
+  }
+}

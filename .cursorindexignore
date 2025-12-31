@@ -1,0 +1,11 @@
+# Test fixtures
+tests/fixtures/
+__mocks__/
+
+# Documentation (allow manual access)
+docs/
+
+# Compiled files
+*.pyc
+*.class
+*.o
