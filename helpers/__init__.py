@@ -13,11 +13,22 @@ from .db_helper import (
     set_preference,
     get_template,
     list_templates,
+    log_action,
+    get_context,
+    set_context,
 )
 from .workspace_generator import generate_workspace
 from .integration_clients import get_client
 
+# Reliability and validation modules
+from . import validation
+from . import reliability
+from . import action_verifier
+from . import context_manager
+from . import error_recovery
+
 __all__ = [
+    # Database helpers
     "init_database",
     "create_workspace",
     "get_workspace",
@@ -30,6 +41,17 @@ __all__ = [
     "set_preference",
     "get_template",
     "list_templates",
+    "log_action",
+    "get_context",
+    "set_context",
+    # Workspace generation
     "generate_workspace",
+    # Integration clients
     "get_client",
+    # Reliability modules
+    "validation",
+    "reliability",
+    "action_verifier",
+    "context_manager",
+    "error_recovery",
 ]

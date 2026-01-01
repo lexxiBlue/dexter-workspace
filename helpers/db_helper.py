@@ -18,30 +18,50 @@ DB_PATH = Path(os.getenv("DB_PATH", str(_DEFAULT_DB_PATH)))
 
 
 @contextmanager
-def get_connection(db_path: Path = DB_PATH):
-    """Get database connection with automatic cleanup.
+def get_connection(db_path: Path = DB_PATH, retry_count: int = 3):
+    """Get database connection with automatic cleanup and retry logic.
     
     Args:
         db_path: Path to SQLite database file
+        retry_count: Number of retry attempts on connection failure
         
     Yields:
         sqlite3.Connection: Database connection with Row factory
         
     Raises:
-        sqlite3.Error: If connection fails
+        sqlite3.Error: If connection fails after retries
     """
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
+    conn = None
+    last_error = None
+    
+    for attempt in range(retry_count):
+        try:
+            conn = sqlite3.connect(str(db_path), timeout=10.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("PRAGMA journal_mode = WAL")  # Better concurrency
+            break
+        except sqlite3.Error as e:
+            last_error = e
+            logger.warning(f"Connection attempt {attempt + 1}/{retry_count} failed: {e}")
+            if attempt < retry_count - 1:
+                import time
+                time.sleep(0.1 * (attempt + 1))  # Exponential backoff
+            else:
+                logger.error(f"All {retry_count} connection attempts failed")
+                raise
+    
     try:
         yield conn
         conn.commit()
     except sqlite3.Error as e:
-        conn.rollback()
+        if conn:
+            conn.rollback()
         logger.error(f"Database error: {e}")
         raise
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 def init_database(db_path: Path = DB_PATH, 
