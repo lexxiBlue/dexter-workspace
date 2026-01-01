@@ -3,7 +3,8 @@ Integration example: Using agent brain with reliability decorators.
 Shows how the agent uses database as its brain for decision-making.
 """
 
-from helpers.reliability import require_verification, record_decision, recall_similar_decisions
+from helpers.reliability import require_verification
+from helpers.agent_brain import record_decision, recall_similar_decisions
 from helpers.agent_brain import (
     store_knowledge, recall_knowledge,
     record_pattern, recall_patterns,

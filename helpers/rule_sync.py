@@ -1,18 +1,46 @@
 """
-Sync rule files from database to .cursor/rules/ directory.
-Keeps .mdc files in sync with database (database is source of truth).
+Rule management - sync between database and .cursor/rules/ files.
+Consolidates rule migration and sync functionality.
 Cursor IDE requires .mdc files to exist in .cursor/rules/ for auto-loading.
 """
 
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from helpers.db_helper import get_rule_documents, get_connection
 
 RULES_DIR = Path(__file__).parent.parent / ".cursor" / "rules"
+
+
+def parse_mdc_frontmatter(content: str) -> Dict[str, str]:
+    """Parse frontmatter from .mdc file.
+    
+    Returns:
+        dict: Parsed frontmatter and content
+    """
+    frontmatter = {}
+    content_body = content
+    
+    # Check for frontmatter (--- delimited)
+    if content.startswith("---"):
+        parts = content.split("---", 2)
+        if len(parts) >= 3:
+            frontmatter_text = parts[1].strip()
+            content_body = parts[2].strip()
+            
+            # Parse key: value pairs
+            for line in frontmatter_text.split("\n"):
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    frontmatter[key.strip()] = value.strip().strip('"').strip("'")
+    
+    return {
+        **frontmatter,
+        "content": content_body
+    }
 
 
 def sync_rules_from_database(workspace_id: Optional[int] = None, dry_run: bool = False) -> int:
@@ -50,8 +78,6 @@ def sync_rules_from_database(workspace_id: Optional[int] = None, dry_run: bool =
         else:
             content = content_body
         
-        content = frontmatter + rule['content']
-        
         if dry_run:
             print(f"Would sync: {rule['rule_file']}")
         else:
@@ -72,8 +98,44 @@ def sync_rules_to_database(workspace_id: Optional[int] = None) -> int:
     Returns:
         int: Number of files synced
     """
-    from helpers.rule_migration import migrate_rules_to_database
-    return migrate_rules_to_database(workspace_id)
+    if not RULES_DIR.exists():
+        print(f"Rules directory not found: {RULES_DIR}")
+        return 0
+    
+    migrated = 0
+    
+    with get_connection() as conn:
+        for rule_file in RULES_DIR.glob("*.mdc"):
+            _migrate_file(conn, rule_file, workspace_id)
+            migrated += 1
+        
+        for rule_file in RULES_DIR.glob("*.md"):
+            _migrate_file(conn, rule_file, workspace_id)
+            migrated += 1
+    
+    return migrated
+
+
+def _migrate_file(conn, rule_file: Path, workspace_id: Optional[int]) -> None:
+    """Migrate a single rule file to database."""
+    content = rule_file.read_text(encoding='utf-8')
+    parsed = parse_mdc_frontmatter(content)
+    
+    rule_name = rule_file.name
+    title = parsed.get("description") or parsed.get("title") or rule_name.replace(".mdc", "").replace(".md", "")
+    globs = parsed.get("globs", "")
+    rule_type = parsed.get("ruleType") or parsed.get("rule_type", "always")
+    content_body = parsed.get("content", content)
+    
+    conn.execute(
+        """
+        INSERT OR REPLACE INTO rule_documents 
+        (workspace_id, rule_file, title, description, globs, rule_type, content, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (workspace_id, rule_name, title, title, globs, rule_type, content_body)
+    )
+    print(f"✓ Migrated: {rule_name}")
 
 
 if __name__ == "__main__":
