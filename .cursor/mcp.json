@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "node",
+      "args": ["-e", "require('@modelcontextprotocol/server-github').main()"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
+        "GITHUB_REPOSITORY": "lexxiBlue/dexter-workspace"
+      },
+      "disabled": false,
+      "alwaysAllow": [
+        "create_pull_request",
+        "create_issue",
+        "list_issues",
+        "get_issue",
+        "search_repositories"
+      ]
+    },
+    "filesystem": {
+      "command": "node",
+      "args": ["-e", "require('@modelcontextprotocol/server-filesystem').main()"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "${PWD}"
+      },
+      "disabled": false,
+      "alwaysAllow": [
+        "read_file",
+        "list_directory",
+        "search_files"
+      ]
+    }
+  }
+}

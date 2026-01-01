@@ -1,80 +1,93 @@
 # Dexter Workspace
 
-**AI-First Cursor IDE Framework with Guardrails**
+**AI-first Cursor IDE framework with strong guardrails, MCP integration, and a single SQLite source of truth.**
 
-Dexter is a structured workspace framework designed for autonomous AI agent operation within Cursor IDE. It provides a single SQLite database as the source of truth, domain-segregated integrations, and Python helper layers that enforce safety guardrails while enabling powerful automation.
+Dexter is a structured workspace for running autonomous or semi-autonomous agents inside Cursor IDE against a well-defined SQLite schema, Python helper layer, and domain-specific integrations.
 
-## Architecture Philosophy
+---
 
-### Core Principles
+## Overview
 
-- **Single Source of Truth**: `dexter.sql` + `schema.sql` define all persistent state
-- **Domain Segregation**: Integrations organized by concern (`google/`, `hubspot/`, `automation/`, `projects/`)
-- **Guardrailed Autonomy**: Autonomous for non-destructive tasks, explicit confirmation for state changes
-- **Audit Trail**: All meaningful actions logged via DB and workspace helpers
-- **Framework-Ready**: Minimal implementation surface, maximum structural clarity
+Dexter focuses on four things:
 
-### Safety Model
+- **Single source of truth**: `dexter.sql` and `schema.sql` define all persistent state (control-plane and workspace domains).
+- **Guardrailed autonomy**: Agents can work freely for non-destructive tasks; state changes and schema edits are tightly controlled.
+- **First-class Cursor support**: `.cursor/` contains rules, MCP config, custom commands, and ignore files aligned with Cursor 0.46+.
+- **Auditability and structure**: All meaningful actions flow through helpers and are designed to be logged and inspected.
 
+---
+
+## Architecture
+
+### Mental model
+
+```text
+Agent request
+   ↓
+Dexter rules (.cursor/rules/*.mdc)
+   ↓
+Helpers (db_helper, integration_clients, workspace_generator)
+   ↓
+SQLite schema (dexter.sql + schema.sql)
+   ↓
+Domain data (customers, orders, integration_configs, …)
 ```
-Agent Request → db_helper.py → SQLite (dexter.db)
-                     ↓
-              Validation Layer
-                     ↓
-            Audit Log + Execute
-```
 
-**Guardrails in Practice**:
-- DB writes go through `helpers/db_helper.py` only
-- External API calls route through `helpers/integration_clients.py`
-- Destructive operations require explicit confirmation
-- All actions logged with timestamp, user, and change details
-- Agent scope limited to workspace boundaries
+### Repository layout
 
-## Repository Structure
-
-```
+```text
 dexter-workspace/
-├── .cursor/              # Cursor IDE rules and agent protocol
-│   └── rules/            # Agent behavior constraints
-├── .github/              # CI/CD automation
-│   └── workflows/        # GitHub Actions pipelines
-├── domains/              # Domain-specific integrations (empty = framework ready)
-│   ├── automation/       # Internal workflow orchestration
-│   ├── google/           # Google Workspace integrations
-│   ├── hubspot/          # HubSpot CRM workflows
-│   └── projects/         # Per-project scaffolding
-├── helpers/              # Core control layer
-│   ├── db_helper.py               # DB access + guardrails
-│   ├── integration_clients.py     # External system abstraction
-│   └── workspace_generator.py     # Meta-tooling for scaffolding
-├── dexter.sql            # Canonical database schema (source of truth)
-├── schema.sql            # Additional schema definitions/migrations
-├── dexter.db             # Runtime SQLite database (ephemeral in dev)
-├── .env.template         # Configuration template
-└── README.md             # This file
+├── .cursor/                  # Cursor rules, MCP config, commands, docs
+│   ├── rules/                # Agent behavior + domain rules (.mdc / .md)
+│   ├── commands.json         # /Handoff and other custom commands
+│   ├── cursor-config.md      # Detailed Cursor 0.46+ configuration
+│   ├── README.md             # Agent quickstart
+│   └── SETUP.md              # Team onboarding for Cursor
+├── .github/
+│   └── workflows/            # CI/CD (lint, test, build)
+├── domains/                  # Domain-specific integrations
+│   ├── automation/           # Internal orchestration
+│   ├── google/               # Google Workspace
+│   ├── hubspot/              # HubSpot CRM
+│   └── projects/             # Project-scoped helpers
+├── helpers/
+│   ├── db_helper.py          # Database access + guardrails
+│   ├── integration_clients.py# External system abstraction
+│   └── workspace_generator.py# Meta-tooling / scaffolding
+├── tests/                    # Smoke tests + fixtures
+├── dexter.sql                # Core/control schema
+├── schema.sql                # Workspace + domain schema (customers, orders, etc.)
+├── dexter.db                 # Runtime SQLite database (dev/local only)
+├── .env.template             # Environment configuration template
+└── README.md                 # This file
 ```
 
-### Key Files
+### Key data layers
 
-| File | Purpose | Mutability |
-|------|---------|------------|
-| `dexter.sql` / `schema.sql` | Canonical DB schema | Version controlled, manual edits only |
-| `dexter.db` | Runtime database | Ephemeral in dev, backed up in prod |
-| `helpers/db_helper.py` | DB access layer | Core contract, test thoroughly |
-| `helpers/integration_clients.py` | External API layer | Core contract, extend per domain |
-| `.cursor/rules/` | Agent behavior rules | Defines autonomy boundaries |
+- **Control-plane schema (`dexter.sql`)**  
+  Core tables for workflows, automation logs, control rules, context registry, automation state, session cache, and audit log.
 
-## Quick Start
+- **Workspace + domain schema (`schema.sql`)**  
+  Tables for workspaces, branches, merge/pull requests, reviews, commits, issues, discussions, plus domain tables such as `customers`, `orders`, and `integration_configs`.
+
+- **Helper layer (`helpers/`)**  
+  All DB writes and external calls flow through well-defined helpers:
+  - `db_helper.py`: parameterized SQL only, centralizes DB access and migrations.
+  - `integration_clients.py`: wraps external services (Google, HubSpot, etc.).
+  - `workspace_generator.py`: scaffolding and workspace automation.
+
+---
+
+## Getting started
 
 ### Prerequisites
 
 - Python 3.9+
-- Cursor IDE (or VS Code with Cursor extension)
 - SQLite 3
 - Git
+- Cursor IDE (or VS Code with Cursor extension) for AI-driven workflows
 
-### Local Setup
+### Local setup
 
 ```bash
 # 1. Clone the repository
@@ -83,196 +96,214 @@ cd dexter-workspace
 
 # 2. Create environment file from template
 cp .env.template .env
-# Edit .env with your configuration (API keys, workspace settings)
+# Populate .env with your settings (API keys, DB path, etc.)
 
 # 3. Initialize the database
 sqlite3 dexter.db < dexter.sql
 sqlite3 dexter.db < schema.sql
 
-# 4. Install Python dependencies
-pip install -r requirements.txt  # If requirements.txt exists
+# 4. (Optional) Create and activate a virtualenv
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 
-# 5. Open in Cursor IDE
+# 5. Install Python dependencies
+pip install -r requirements.txt
+
+# 6. Open in Cursor
 cursor .
 ```
 
-### Verify Setup
+### Sanity checks
 
 ```bash
-# Check database initialized
+# Check tables exist
 sqlite3 dexter.db "SELECT name FROM sqlite_master WHERE type='table';"
 
-# Test helper imports
-python3 -c "from helpers.db_helper import *; print('✓ DB helper loaded')"
-python3 -c "from helpers.integration_clients import *; print('✓ Integration clients loaded')"
+# Verify helpers import
+python -c "from helpers.db_helper import *; print('✓ db_helper loaded')"
+python -c "from helpers.integration_clients import *; print('✓ integration_clients loaded')"
 ```
 
-## Agent Operation
+---
 
-### Autonomy Boundaries
+## Using Dexter in Cursor
 
-**Autonomous (No Confirmation Required)**:
-- Read operations (DB queries, file reads)
-- Log entries and audit trails
-- Non-destructive analysis and reporting
-- Scoped within workspace boundaries
+Dexter is designed to be driven primarily through Cursor with a structured bootstrap flow.
 
-**Requires Confirmation**:
-- Database writes (INSERT, UPDATE, DELETE)
-- External API calls (Google, HubSpot, etc.)
-- File creation/modification outside workspace
-- Destructive operations
+### 1. Run the `/Handoff` command
 
-### Example Workflows
+In Cursor, with this repository open:
 
-#### Safe: Query and Report
-```python
-from helpers.db_helper import query_db
+1. Open the chat panel.
+2. Type `/Handoff` and send.
+3. Wait for the agent to:
+   - Inspect the repository layout.
+   - Load schemas from `dexter.sql` and `schema.sql`.
+   - Read core rules from `.cursor/rules/` (`core.mdc`, `database.mdc`, `dexter.mdc`).
+   - Skim supporting rules (`python.mdc`, `automation.mdc`, `integrations.mdc`, `dexter-context.md`, `project-rules.md`, `common-pitfalls.md`).
+   - Inspect helper modules (`helpers/db_helper.py`, `helpers/integration_clients.py`, `helpers/workspace_generator.py`).
+   - Check for `.cursor/mcp.json` to determine MCP GitHub/filesystem availability.
 
-# Agent can autonomously query and report
-results = query_db("SELECT * FROM tasks WHERE status='pending'")
-print(f"Found {len(results)} pending tasks")
-```
+The agent’s first reply after `/Handoff` is expected to:
 
-#### Guarded: Write Operations
-```python
-from helpers.db_helper import execute_with_confirmation
+- Summarize key schema tables and their purpose.
+- List the main helpers and what they do.
+- Confirm which rules were loaded from `.cursor/rules/`.
+- State whether MCP GitHub/filesystem tools are configured.
+- Present a short, numbered plan for your requested task.
 
-# Agent must request confirmation before executing
-execute_with_confirmation(
-    "UPDATE tasks SET status='completed' WHERE id=?",
-    (task_id,),
-    description="Mark task as completed"
-)
-```
+### 2. Day-to-day agent usage
 
-## Development Guidelines
+- Use natural language to describe automation, data, or integration tasks.
+- Let Dexter propose a plan (tests, code changes, migrations, PR flow).
+- Confirm any destructive operation before it is executed (schema changes, mass updates, external side effects).
 
-### Adding New Domains
+For detailed Cursor/MCP behavior, see [`.cursor/cursor-config.md`](./.cursor/cursor-config.md).
 
-1. Create domain folder: `domains/new_domain/`
-2. Add domain-specific helpers: `domains/new_domain/helpers.py`
-3. Extend `integration_clients.py` if external APIs needed
-4. Update schema if domain needs persistent state
-5. Add tests to CI pipeline
+---
 
-### Database Changes
+## Cursor & MCP configuration
+
+Dexter ships a complete Cursor 0.46+ configuration, aligned with current documentation.
+
+### Core files
+
+- **`.cursor/mcp.json`** – Official MCP config:  
+  - `github` server: issues, PRs, repo search (uses `GITHUB_TOKEN`).  
+  - `filesystem` server: file reads, directory listing, search (uses `ALLOWED_DIRECTORIES`).
+
+- **`.cursor/rules/`** – Behavior and domain rules:  
+  - Core rules: `core.mdc`, `database.mdc`, `dexter.mdc`.  
+  - Context rules: `python.mdc`, `automation.mdc`, `integrations.mdc`.  
+  - Reference/context: `common-pitfalls.md`, `dexter-context.md`, `project-rules.md`, `github-integration.md`, `handoff.md`.
+
+- **`.cursor/commands.json`** – Custom commands:  
+  - `/Handoff`: standardized bootstrap for new sessions (see above).
+
+- **`.cursor/cursor-config.md`** – In-depth explanation of all of the above, including legacy vs. current patterns.
+
+### Ignore & indexing behavior
+
+- **`.cursorignore`** – Best-effort AI and context block list:
+  - Secrets: `.env`, `.env.*`, `*.key`, `secrets/`, `.aws/`, `.kube/`.
+  - Dependencies: `node_modules/`, `.venv/`, `__pycache__/`, `*.egg-info/`.
+  - Build artifacts, logs, large binaries and databases.
+
+- **`.cursorindexingignore`** – Indexing-only control:
+  - Test fixtures: `tests/fixtures/`, `__mocks__/`.
+  - Compiled/codegen files: `*.pyc`, `*.class`, `*.o`.
+  - Cache dirs: `.pytest_cache/`, `.mypy_cache/`, `.ruff_cache/`.
+
+The combination keeps Cursor’s index tight and fast while protecting secrets and noisy artifacts from being pulled into AI context.
+
+---
+
+## Safety & guardrails
+
+Dexter is designed to be safe-by-default for AI agents:
+
+- **Parameterized SQL only**: Helpers enforce `?` placeholders; no string-concatenated SQL.
+- **Controlled schema evolution**: Agents must propose a migration plan and get explicit approval before schema changes.
+- **No table/column invention**: Agents must rely on `dexter.sql`, `schema.sql`, and `dexter-context.md` as the source of truth.
+- **Secret handling**: API keys and credentials live in `.env` and environment variables, never hard-coded or logged.
+- **Scoped autonomy**: Read/analysis is autonomous; writes and external side effects require confirmation.
+- **Auditability**: The schema is structured so that important actions can be logged and later inspected.
+
+---
+
+## Development workflow
+
+### Database changes
+
+1. Update `dexter.sql` and/or `schema.sql` to reflect the new canonical schema.
+2. Apply locally to a fresh dev DB:
+
+   ```bash
+   rm -f dexter.db
+   sqlite3 dexter.db < dexter.sql
+   sqlite3 dexter.db < schema.sql
+   ```
+
+3. Run smoke tests under `tests/`.
+4. Commit schema + tests together.
+
+### Coding & testing
 
 ```bash
-# 1. Edit dexter.sql or schema.sql (version controlled)
-# 2. Test migration
-sqlite3 test.db < dexter.sql && sqlite3 test.db < schema.sql
-# 3. Apply to dev database
-sqlite3 dexter.db < migration.sql
-# 4. Commit schema changes
-git add dexter.sql schema.sql
-git commit -m "Add schema for new_feature"
-```
-
-### Testing Strategy
-
-```bash
-# Run Python linting
+# Lint
 ruff check helpers/ domains/
 
-# Run tests (if test suite exists)
+# Run tests
 pytest tests/
-
-# Validate database schema
-sqlite3 dexter.db ".schema" > schema_current.sql
-diff <(sqlite3 temp.db < dexter.sql && sqlite3 temp.db ".schema") schema_current.sql
 ```
 
-## CI/CD Pipeline
+When making non-trivial changes, prefer:
 
-GitHub Actions workflow (`.github/workflows/ci-python-docker.yml`) runs on every push:
+- Adding/updating tests in `tests/`.
+- Letting Dexter propose tests when using Cursor.
+- Running CI locally before pushing if possible.
 
-1. **Lint**: Ruff checks Python code quality
-2. **Test**: pytest validates helper functions
-3. **Build**: Docker image packages workspace for deployment
-4. **Publish**: Tagged releases pushed to container registry
+### Git & PR flow
 
-## MCP Integration
+- Prefer feature branches over direct commits to `main`.
+- When MCP GitHub tools are available in Cursor, let the agent:
+  - Create branches.  
+  - Open pull requests.  
+  - Add context from issues and existing PRs.
 
-Dexter supports Model Context Protocol (MCP) servers for enhanced agent capabilities:
-
-- **GitHub MCP**: Repository operations (files, PRs, issues)
-- **Filesystem MCP**: Local file access and multi-file edits
-
-See `.cursormcp-servers.json` for configuration.
-
-## Security & Safety
-
-### Environment Variables
-
-**NEVER commit `.env` to version control**. Use `.env.template` as a guide.
-
-```bash
-# Add to .gitignore (already included)
-echo ".env" >> .gitignore
-echo "dexter.db" >> .gitignore  # Ephemeral in dev
-```
-
-### Database Backups
-
-**Development**: `dexter.db` is ephemeral; recreate from `dexter.sql` + `schema.sql`
-
-**Production**: Implement automated backups
-```bash
-# Example backup script
-sqlite3 dexter.db ".backup dexter_$(date +%Y%m%d_%H%M%S).db"
-```
-
-### Access Control
-
-- Limit API keys to minimum required scopes
-- Use read-only credentials where possible
-- Rotate keys regularly
-- Log all authenticated operations
+---
 
 ## Troubleshooting
 
-### Database Issues
+**Database looks wrong**
 
 ```bash
-# Reset dev database
-rm dexter.db
+# Rebuild dev DB from canonical schema
+rm -f dexter.db
 sqlite3 dexter.db < dexter.sql
 sqlite3 dexter.db < schema.sql
 ```
 
-### Agent Not Following Rules
+**Agent ignores rules or schema**
 
-Check `.cursor/rules/` for behavior constraints and verify Cursor settings.
+- Confirm Cursor is opened at the repo root.  
+- Check `.cursor/rules/` files exist and are valid.  
+- Rerun `/Handoff` to re-bootstrap the session.  
+- If still inconsistent, restart Cursor and try again.
 
-### Import Errors
+**MCP GitHub/filesystem not available**
 
-```bash
-# Verify Python path
-export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-```
+- Ensure `.cursor/mcp.json` is present and valid JSON.
+- Set `GITHUB_TOKEN` and any other required environment variables.
+- Restart Cursor so MCP servers are re-discovered.
+
+For more in-depth operational notes, see `.cursor/SETUP.md` and `.cursor/cursor-config.md`.
+
+---
 
 ## Roadmap
 
-- [ ] Complete domain implementations (Google, HubSpot)
-- [ ] Comprehensive test coverage for helpers
-- [ ] Database migration tooling
-- [ ] Production deployment documentation
-- [ ] Multi-workspace orchestration
+- Expand domain implementations (Google, HubSpot, internal automation).
+- Harden migration tooling and schema versioning.
+- Broaden test coverage across helpers and domains.
+- Add production deployment and backup patterns.
+- Improve multi-workspace orchestration support.
+
+---
 
 ## Contributing
 
-This is a personal workspace framework. If adapting for your use:
+This repository is primarily a personal/teams workspace framework, but it is structured to be forked and adapted:
 
-1. Fork the repository
-2. Customize domains for your integrations
-3. Update `.cursor/rules/` for your agent protocol
-4. Modify `dexter.sql` for your schema
+1. Fork the repo.
+2. Customize `domains/` to match your integrations.
+3. Adjust `.cursor/rules/` to encode your own agent protocol.
+4. Evolve `dexter.sql` and `schema.sql` to match your data model.
+5. Update `.cursor/cursor-config.md` and this README for your team.
 
-## License
+---
 
-MIT License - See LICENSE file for details
+## License & contact
 
-## Contact
-
-Maintained by [@lexxiBlue](https://github.com/lexxiBlue)
+- **License**: MIT (see `LICENSE`).
+- **Maintainer**: [@lexxiBlue](https://github.com/lexxiBlue).

@@ -4,6 +4,17 @@
 
 ---
 
+## ⚠️ Important: Planned Schema Notice
+
+The tables documented below represent the **planned domain schema** for Dexter. Before writing SQL queries against `customers`, `orders`, or `integration_configs`, verify that:
+1. These tables have been created in `schema.sql` or `dexter.sql`
+2. They are present in the live `dexter.db` (run `/db-reset` or `sqlite3 dexter.db ".tables"`)
+3. Their columns match the definitions below
+
+If a table does not exist, ask the user to add it before proceeding with queries.
+
+---
+
 ## Project Overview
 
 **Dexter** = Equipment rental & procurement management system for equipment orders (forklifts, excavators, etc.).
