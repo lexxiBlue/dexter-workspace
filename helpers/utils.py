@@ -243,6 +243,213 @@ def cleanup_all(days: int = 30) -> None:
     print(f"Cleanup complete: {expired} expired contexts, {old_actions} old actions removed")
 
 
+# Integration clients (consolidated from integration_clients.py)
+class BaseClient:
+    """Base class for integration clients."""
+    def __init__(self, api_key_env_var: str):
+        import os
+        self.api_key = os.getenv(api_key_env_var)
+        if not self.api_key:
+            raise ValueError(f"API key not found in environment variable: {api_key_env_var}")
+    def _request(self, method: str, endpoint: str, **kwargs) -> dict:
+        raise NotImplementedError
+
+
+class GoogleClient:
+    """Google Workspace API client wrapper."""
+    def __init__(self, credentials_path: Optional[str] = None):
+        import os
+        self.credentials_path = credentials_path or os.getenv("GOOGLE_CREDENTIALS_PATH")
+    def get_gmail_service(self): pass
+    def get_drive_service(self): pass
+    def get_sheets_service(self): pass
+    def list_emails(self, query: str = "", max_results: int = 10) -> list[dict]: pass
+    def send_email(self, to: str, subject: str, body: str) -> dict: pass
+    def list_drive_files(self, folder_id: Optional[str] = None) -> list[dict]: pass
+    def read_spreadsheet(self, spreadsheet_id: str, range_name: str) -> list[list]: pass
+    def write_spreadsheet(self, spreadsheet_id: str, range_name: str, values: list[list]) -> dict: pass
+
+
+class HubSpotClient:
+    """HubSpot CRM API client wrapper."""
+    def __init__(self, api_key_env_var: str = "HUBSPOT_API_KEY"):
+        import os
+        self.api_key = os.getenv(api_key_env_var)
+    def list_contacts(self, limit: int = 10) -> list[dict]: pass
+    def get_contact(self, contact_id: str) -> dict: pass
+    def create_contact(self, properties: dict) -> dict: pass
+    def list_deals(self, limit: int = 10) -> list[dict]: pass
+    def create_deal(self, properties: dict) -> dict: pass
+
+
+class OpenAIClient:
+    """OpenAI API client wrapper."""
+    def __init__(self, api_key_env_var: str = "OPENAI_API_KEY"):
+        import os
+        self.api_key = os.getenv(api_key_env_var)
+    def chat(self, messages: list[dict], model: str = "gpt-4", **kwargs) -> str: pass
+    def complete(self, prompt: str, model: str = "gpt-4", **kwargs) -> str: pass
+
+
+class TavilyClient:
+    """Tavily Search API client wrapper."""
+    def __init__(self, api_key_env_var: str = "TAVILY_API_KEY"):
+        import os
+        self.api_key = os.getenv(api_key_env_var)
+    def search(self, query: str, search_depth: str = "advanced", max_results: int = 5) -> list[dict]: pass
+    def get_answer(self, query: str) -> str: pass
+
+
+def get_client(integration_type: str, **kwargs):
+    """Factory function to get appropriate client."""
+    clients = {
+        "google": GoogleClient,
+        "hubspot": HubSpotClient,
+        "openai": OpenAIClient,
+        "tavily": TavilyClient,
+    }
+    client_class = clients.get(integration_type)
+    if not client_class:
+        raise ValueError(f"Unknown integration type: {integration_type}")
+    return client_class(**kwargs)
+
+
+# Workspace generation (consolidated from workspace_generator.py)
+def generate_mdc_rule(rule: dict) -> str:
+    """Generate .mdc rule file content."""
+    import json
+    globs = rule.get("globs", "")
+    globs_line = f'globs: {json.dumps(globs.split(","))}' if globs else 'globs: ["**/*"]'
+    return f"""---
+description: {rule.get("description", rule["rule_name"])}
+{globs_line}
+ruleType: {rule.get("rule_type", "always")}
+---
+
+{rule["content"]}
+"""
+
+
+def generate_cursorignore() -> str:
+    """Generate .cursorignore file content."""
+    return """# Dependencies
+node_modules/
+vendor/
+.venv/
+venv/
+__pycache__/
+
+# Build outputs
+dist/
+build/
+*.log
+*.pyc
+
+# Secrets and environment
+.env
+.env.*
+*.key
+secrets/
+
+# Large files
+*.mp4
+*.zip
+*.tar.gz
+data/
+
+# IDE and system
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+"""
+
+
+def generate_cursorindexignore() -> str:
+    """Generate .cursorindexignore file content."""
+    return """# Test fixtures
+tests/fixtures/
+__mocks__/
+
+# Documentation (allow manual access)
+docs/
+*.md
+
+# Compiled files
+*.pyc
+*.class
+*.o
+"""
+
+
+def generate_vscode_settings() -> str:
+    """Generate .vscode/settings.json content."""
+    import json
+    from helpers.db_helper import get_preference
+    settings = {
+        "editor.fontSize": 14,
+        "editor.tabSize": int(get_preference("tab_size") or 4),
+        "editor.formatOnSave": get_preference("format_on_save") == "true",
+        "files.autoSave": "afterDelay" if get_preference("auto_save") == "true" else "off",
+        "files.autoSaveDelay": 1000,
+        "python.defaultInterpreterPath": "python3",
+        "python.formatting.provider": "black",
+        "[python]": {"editor.tabSize": 4}
+    }
+    return json.dumps(settings, indent=2)
+
+
+def generate_cli_config() -> str:
+    """Generate .cursor/cli-config.json content."""
+    import json
+    from helpers.db_helper import get_preference
+    config = {
+        "version": 1,
+        "editor": {"vimMode": get_preference("vim_mode") == "true"},
+        "permissions": {
+            "allow": ["Shell(ls)", "Shell(cat)", "Shell(echo)", "Shell(python)", "Shell(pip)", "Shell(git)"],
+            "deny": ["Shell(rm -rf /)"]
+        }
+    }
+    return json.dumps(config, indent=2)
+
+
+def generate_workspace(workspace_id: int, output_dir: Path):
+    """Generate all workspace configuration files."""
+    from helpers.db_helper import get_workspace, get_rules
+    
+    workspace = get_workspace(workspace_id)
+    if not workspace:
+        raise ValueError(f"Workspace {workspace_id} not found")
+    
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    cursor_dir = output_dir / ".cursor"
+    rules_dir = cursor_dir / "rules"
+    vscode_dir = output_dir / ".vscode"
+    
+    rules_dir.mkdir(parents=True, exist_ok=True)
+    vscode_dir.mkdir(parents=True, exist_ok=True)
+    
+    rules = get_rules(workspace_id)
+    for rule in rules:
+        rule_file = rules_dir / f"{rule['rule_name']}.mdc"
+        rule_file.write_text(generate_mdc_rule(rule))
+        print(f"Generated: {rule_file}")
+    
+    (output_dir / ".cursorignore").write_text(generate_cursorignore())
+    (output_dir / ".cursorindexignore").write_text(generate_cursorindexignore())
+    (vscode_dir / "settings.json").write_text(generate_vscode_settings())
+    (cursor_dir / "cli-config.json").write_text(generate_cli_config())
+    
+    print(f"\nWorkspace '{workspace['name']}' generated at {output_dir}")
+
+
 if __name__ == "__main__":
     import sys
     
@@ -255,7 +462,11 @@ if __name__ == "__main__":
         elif sys.argv[1] == "cleanup":
             days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
             cleanup_all(days)
+        elif sys.argv[1] == "generate" and len(sys.argv) >= 4:
+            workspace_id = int(sys.argv[2])
+            output_dir = Path(sys.argv[3])
+            generate_workspace(workspace_id, output_dir)
         else:
-            print("Usage: python utils.py [stats|health|cleanup [days]]")
+            print("Usage: python utils.py [stats|health|cleanup [days]|generate <workspace_id> <output_dir>]")
     else:
         quick_stats()

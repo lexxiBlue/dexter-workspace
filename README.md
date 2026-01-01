@@ -46,8 +46,8 @@ dexter-workspace/
 │   └── projects/         # Per-project scaffolding
 ├── helpers/              # Core control layer
 │   ├── db_helper.py               # DB access + guardrails
-│   ├── integration_clients.py     # External system abstraction
-│   └── workspace_generator.py     # Meta-tooling for scaffolding
+│   ├── reliability.py             # Error handling, validation, decorators
+│   └── utils.py                   # Health checks, integrations, workspace gen
 ├── schema.sql            # Consolidated database schema (source of truth)
 ├── dexter.db             # Runtime SQLite database (ephemeral in dev)
 ├── .env.template         # Configuration template
@@ -102,7 +102,7 @@ sqlite3 dexter.db "SELECT name FROM sqlite_master WHERE type='table';"
 
 # Test helper imports
 python3 -c "from helpers.db_helper import *; print('✓ DB helper loaded')"
-python3 -c "from helpers.integration_clients import *; print('✓ Integration clients loaded')"
+python3 -c "from helpers.utils import get_client; print('✓ Integration clients loaded')"
 ```
 
 ## Agent Operation

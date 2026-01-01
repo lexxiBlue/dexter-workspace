@@ -17,8 +17,7 @@ from .db_helper import (
     get_context,
     set_context,
 )
-from .workspace_generator import generate_workspace
-from .integration_clients import get_client
+from .utils import generate_workspace, get_client
 
 # Reliability and utility modules (consolidated)
 from . import reliability
@@ -41,9 +40,8 @@ __all__ = [
     "log_action",
     "get_context",
     "set_context",
-    # Workspace generation
+    # Workspace generation and integration clients (from utils)
     "generate_workspace",
-    # Integration clients
     "get_client",
     # Reliability modules (consolidated)
     "reliability",
