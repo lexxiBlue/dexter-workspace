@@ -1,7 +1,60 @@
-node_modules/
+# Environment and secrets
 .env
-*.db
-*.sqlite
+.env.local
+*.key
+*.pem
+
+# Database (ephemeral in dev)
+dexter.db
+dexter.db-journal
+test.db
+*.db-shm
+*.db-wal
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Local working directories
+.cache/
+.local/
+logs/
+*.log
+
+# CI/CD
+trivy-results.sarif

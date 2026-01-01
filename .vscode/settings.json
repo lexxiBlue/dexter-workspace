@@ -1,17 +1,48 @@
 {
-  "editor.fontSize": 14,
-  "editor.tabSize": 4,
-  "editor.formatOnSave": true,
-  "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 1000,
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
+    }
+  },
   "python.defaultInterpreterPath": "python3",
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.formatting.provider": "black",
+  "python.analysis.typeCheckingMode": "basic",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/*.pyc": true,
+    ".cache": true,
+    ".local": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.cache/**": true,
+    "**/dexter.db": true
+  },
   "[python]": {
-    "editor.tabSize": 4
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
   },
-  "[javascript]": {
-    "editor.tabSize": 2
+  "files.associations": {
+    "*.sql": "sql"
   },
-  "[typescript]": {
-    "editor.tabSize": 2
-  }
+  "sqltools.connections": [
+    {
+      "name": "Dexter DB",
+      "driver": "SQLite",
+      "database": "${workspaceFolder}/dexter.db"
+    }
+  ]
 }

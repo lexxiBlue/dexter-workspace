@@ -1,0 +1,53 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "description": "GitHub MCP server for repository operations (files, PRs, issues)",
+      "capabilities": [
+        "read_files",
+        "write_files",
+        "create_pull_requests",
+        "manage_issues",
+        "search_code"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${WORKSPACE_ROOT}"
+      ],
+      "description": "Local filesystem access scoped to workspace root",
+      "capabilities": [
+        "read_files",
+        "write_files",
+        "list_directory",
+        "create_directory"
+      ],
+      "security": {
+        "allowedPaths": [
+          "${WORKSPACE_ROOT}"
+        ],
+        "deniedPaths": [
+          "${WORKSPACE_ROOT}/.env",
+          "${WORKSPACE_ROOT}/.git",
+          "${WORKSPACE_ROOT}/dexter.db"
+        ]
+      }
+    }
+  },
+  "globalShortcut": "Ctrl+Shift+M",
+  "autoStart": true,
+  "logging": {
+    "level": "info",
+    "file": ".cache/mcp-servers.log"
+  }
+}

@@ -1,0 +1,14 @@
+# Core dependencies
+sqlite3-python>=1.0.0
+
+# Development and testing
+ruff>=0.1.0
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+
+# Optional: Integration clients (uncomment as needed)
+# google-api-python-client>=2.100.0
+# google-auth-httplib2>=0.1.1
+# google-auth-oauthlib>=1.1.0
+# hubspot-api-client>=8.0.0
