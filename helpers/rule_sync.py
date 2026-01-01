@@ -34,16 +34,21 @@ def sync_rules_from_database(workspace_id: Optional[int] = None, dry_run: bool =
     for rule in rules:
         rule_file = RULES_DIR / rule['rule_file']
         
-        # Reconstruct frontmatter
-        frontmatter_lines = ["---"]
-        if rule.get('description'):
-            frontmatter_lines.append(f"description: {rule['description']}")
-        if rule.get('globs'):
-            frontmatter_lines.append(f"globs: {rule['globs']}")
-        if rule.get('rule_type'):
-            frontmatter_lines.append(f"ruleType: {rule['rule_type']}")
-        frontmatter_lines.append("---")
-        frontmatter = "\n".join(frontmatter_lines) + "\n\n"
+        # Reconstruct frontmatter (only if not already present in content)
+        content_body = rule['content']
+        if not content_body.strip().startswith("---"):
+            frontmatter_lines = ["---"]
+            if rule.get('description'):
+                frontmatter_lines.append(f"description: {rule['description']}")
+            if rule.get('globs'):
+                frontmatter_lines.append(f"globs: {rule['globs']}")
+            if rule.get('rule_type'):
+                frontmatter_lines.append(f"ruleType: {rule['rule_type']}")
+            frontmatter_lines.append("---")
+            frontmatter = "\n".join(frontmatter_lines) + "\n\n"
+            content = frontmatter + content_body
+        else:
+            content = content_body
         
         content = frontmatter + rule['content']
         
