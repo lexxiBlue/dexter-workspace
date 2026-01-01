@@ -192,14 +192,23 @@ GitHub Actions workflow (`.github/workflows/ci-python-docker.yml`) runs on every
 3. **Build**: Docker image packages workspace for deployment
 4. **Publish**: Tagged releases pushed to container registry
 
-## MCP Integration
+## MCP Integration & Cursor 0.46+ Setup
 
 Dexter supports Model Context Protocol (MCP) servers for enhanced agent capabilities:
 
 - **GitHub MCP**: Repository operations (files, PRs, issues)
 - **Filesystem MCP**: Local file access and multi-file edits
 
-See `.cursormcp-servers.json` for configuration.
+### Cursor 0.46+ configuration
+
+Workspace-aligned configuration for modern Cursor versions:
+
+- **MCP servers**: configured in `.cursor/mcp.json` (GitHub + filesystem servers, using environment variables like `GITHUB_TOKEN` and `ALLOWED_DIRECTORIES`).
+- **Indexing control**: `.cursorindexingignore` defines what Cursor indexes for AI; `.cursorignore` defines what Cursor should avoid pulling into context (secrets, caches, large artifacts, lock files).
+- **Dexter Handoff command**: `/Handoff` is defined in `.cursor/commands.json` and bootstraps sessions by loading schemas, rules, helpers, and checking MCP availability.
+- **Documentation**: `.cursor/cursor-config.md` explains the Cursor setup, and `.cursor/commands.md` documents available custom commands and expected behavior.
+
+> For a full picture of the Cursor + MCP alignment and validation checklist, see `.cursor/cursor-config.md` and the comments in `.cursor/commands.json`.
 
 ## Security & Safety
 
