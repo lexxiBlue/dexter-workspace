@@ -141,6 +141,66 @@ CREATE TABLE IF NOT EXISTS rules (
     is_active INTEGER DEFAULT 1
 );
 
+-- Agent knowledge base - facts and information the agent has learned
+CREATE TABLE IF NOT EXISTS agent_knowledge (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER,
+    topic TEXT NOT NULL,
+    fact TEXT NOT NULL,
+    source TEXT,
+    confidence REAL DEFAULT 1.0 CHECK (confidence >= 0.0 AND confidence <= 1.0),
+    verified INTEGER DEFAULT 0 CHECK (verified IN (0, 1)),
+    usage_count INTEGER DEFAULT 0,
+    last_used TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+);
+
+-- Agent decisions - stores reasoning and decision history
+CREATE TABLE IF NOT EXISTS agent_decisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER,
+    decision_type TEXT NOT NULL,
+    input_context TEXT,
+    reasoning TEXT,
+    decision TEXT NOT NULL,
+    outcome TEXT,
+    success INTEGER DEFAULT 1 CHECK (success IN (0, 1)),
+    learned_from INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    FOREIGN KEY (learned_from) REFERENCES agent_decisions(id)
+);
+
+-- Agent patterns - learned patterns and heuristics
+CREATE TABLE IF NOT EXISTS agent_patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER,
+    pattern_name TEXT NOT NULL,
+    pattern_type TEXT CHECK (pattern_type IN ('success', 'failure', 'optimization', 'warning')),
+    trigger_conditions TEXT,
+    action_taken TEXT,
+    success_rate REAL DEFAULT 0.0 CHECK (success_rate >= 0.0 AND success_rate <= 1.0),
+    usage_count INTEGER DEFAULT 0,
+    last_used TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+);
+
+-- Agent state - current agent state and personality
+CREATE TABLE IF NOT EXISTS agent_state (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER,
+    state_key TEXT NOT NULL,
+    state_value TEXT,
+    state_type TEXT CHECK (state_type IN ('preference', 'memory', 'goal', 'constraint')),
+    expires_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    UNIQUE(workspace_id, state_key)
+);
+
 -- Context - working memory for current task
 CREATE TABLE IF NOT EXISTS context (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -212,3 +272,13 @@ CREATE INDEX IF NOT EXISTS idx_domains_workspace ON domains(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_checkpoints_action ON checkpoints(action_id);
 CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(category);
 CREATE INDEX IF NOT EXISTS idx_rules_active ON rules(is_active);
+CREATE INDEX IF NOT EXISTS idx_knowledge_workspace ON agent_knowledge(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_topic ON agent_knowledge(topic);
+CREATE INDEX IF NOT EXISTS idx_knowledge_confidence ON agent_knowledge(confidence);
+CREATE INDEX IF NOT EXISTS idx_decisions_workspace ON agent_decisions(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_decisions_type ON agent_decisions(decision_type);
+CREATE INDEX IF NOT EXISTS idx_decisions_success ON agent_decisions(success);
+CREATE INDEX IF NOT EXISTS idx_patterns_workspace ON agent_patterns(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_patterns_type ON agent_patterns(pattern_type);
+CREATE INDEX IF NOT EXISTS idx_state_workspace ON agent_state(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_state_key ON agent_state(state_key);

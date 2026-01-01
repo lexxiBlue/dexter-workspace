@@ -18,6 +18,17 @@ from .db_helper import (
     set_context,
 )
 from .utils import generate_workspace, get_client
+from .agent_brain import (
+    store_knowledge,
+    recall_knowledge,
+    record_decision,
+    update_decision_outcome,
+    record_pattern,
+    recall_patterns,
+    set_agent_state,
+    get_agent_state,
+    get_agent_intelligence,
+)
 
 # Reliability and utility modules (consolidated)
 from . import reliability
@@ -46,4 +57,15 @@ __all__ = [
     # Reliability modules (consolidated)
     "reliability",
     "utils",
+    # Agent brain
+    "agent_brain",
+    "store_knowledge",
+    "recall_knowledge",
+    "record_decision",
+    "update_decision_outcome",
+    "record_pattern",
+    "recall_patterns",
+    "set_agent_state",
+    "get_agent_state",
+    "get_agent_intelligence",
 ]
