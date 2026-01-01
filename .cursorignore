@@ -4,31 +4,48 @@ vendor/
 .venv/
 venv/
 __pycache__/
+.pytest_cache/
+.coverage
+coverage.xml
 
 # Build outputs
 dist/
 build/
 *.log
 *.pyc
+*.pyo
+*.egg-info/
 
 # Secrets and environment
 .env
 .env.*
+!.env.template
 *.key
+*.pem
 secrets/
 
 # Large files
 *.mp4
 *.zip
 *.tar.gz
+*.rar
 data/
+*.db-shm
+*.db-wal
 
 # IDE and system
 .idea/
+.vscode/
 *.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
 
-# Database files
+# Database files (ephemeral)
 *.db
 *.sqlite
+test.db
+
+# CI/CD artifacts
+trivy-results.sarif

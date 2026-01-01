@@ -1,11 +1,21 @@
-# Test fixtures
+# Test fixtures and mocks
 tests/fixtures/
 __mocks__/
+tests/__pycache__/
 
-# Documentation (allow manual access)
+# Documentation (allow manual access, but don't index for code completion)
 docs/
+*.md
+!README.md
 
 # Compiled files
 *.pyc
+*.pyo
 *.class
 *.o
+*.so
+
+# Generated files
+*.egg-info/
+dist/
+build/
