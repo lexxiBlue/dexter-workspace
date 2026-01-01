@@ -189,10 +189,12 @@ diff <(sqlite3 temp.db < schema.sql && sqlite3 temp.db ".schema") schema_current
 
 GitHub Actions workflow (`.github/workflows/ci-python-docker.yml`) runs on every push:
 
-1. **Lint**: Ruff checks Python code quality
+1. **Lint**: Ruff checks Python code quality (with auto-fix)
 2. **Test**: pytest validates helper functions
-3. **Build**: Docker image packages workspace for deployment
-4. **Publish**: Tagged releases pushed to container registry
+3. **Schema Validation**: SQLite schema integrity checks
+4. **Build**: Docker image packages workspace for deployment
+5. **Security Scan**: Trivy vulnerability scanning
+6. **Publish**: Tagged releases pushed to container registry
 
 ## MCP Integration
 
@@ -244,7 +246,7 @@ sqlite3 dexter.db < schema.sql
 
 ### Agent Not Following Rules
 
-Check `.cursor/rules/` for behavior constraints and verify Cursor settings.
+Check `.cursor/rules/*.mdc` files for behavior constraints. Rules are stored in the database (`rule_documents` table) and synced to files. Use `helpers/rule_sync.py` to sync changes.
 
 ### Import Errors
 
