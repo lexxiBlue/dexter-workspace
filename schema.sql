@@ -141,6 +141,21 @@ CREATE TABLE IF NOT EXISTS rules (
     is_active INTEGER DEFAULT 1
 );
 
+-- Rule documents - stores markdown rule content from .mdc files
+CREATE TABLE IF NOT EXISTS rule_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER,
+    rule_file TEXT NOT NULL UNIQUE,
+    title TEXT,
+    description TEXT,
+    globs TEXT,
+    rule_type TEXT,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+);
+
 -- Agent knowledge base - facts and information the agent has learned
 CREATE TABLE IF NOT EXISTS agent_knowledge (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -272,6 +287,8 @@ CREATE INDEX IF NOT EXISTS idx_domains_workspace ON domains(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_checkpoints_action ON checkpoints(action_id);
 CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(category);
 CREATE INDEX IF NOT EXISTS idx_rules_active ON rules(is_active);
+CREATE INDEX IF NOT EXISTS idx_rule_docs_workspace ON rule_documents(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_rule_docs_file ON rule_documents(rule_file);
 CREATE INDEX IF NOT EXISTS idx_knowledge_workspace ON agent_knowledge(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_topic ON agent_knowledge(topic);
 CREATE INDEX IF NOT EXISTS idx_knowledge_confidence ON agent_knowledge(confidence);

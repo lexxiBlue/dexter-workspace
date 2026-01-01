@@ -16,8 +16,10 @@ from .db_helper import (
     log_action,
     get_context,
     set_context,
+    get_rule_documents,
 )
 from .utils import generate_workspace, get_client
+from .rule_loader import load_rules_for_context, get_rule_by_file
 from .agent_brain import (
     store_knowledge,
     recall_knowledge,
@@ -51,9 +53,13 @@ __all__ = [
     "log_action",
     "get_context",
     "set_context",
+    "get_rule_documents",
     # Workspace generation and integration clients (from utils)
     "generate_workspace",
     "get_client",
+    # Rule loading (from rule_loader)
+    "load_rules_for_context",
+    "get_rule_by_file",
     # Reliability modules (consolidated)
     "reliability",
     "utils",

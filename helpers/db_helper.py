@@ -7,7 +7,7 @@ import os
 import sqlite3
 import logging
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
@@ -182,6 +182,41 @@ def add_rule(workspace_id: int, rule_name: str, content: str,
             (workspace_id, rule_name, description, globs, rule_type, content)
         )
         return cursor.lastrowid
+
+
+def get_rule_documents(workspace_id: Optional[int] = None, rule_file: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Get rule documents from database.
+    
+    Args:
+        workspace_id: Optional workspace ID (None for global rules)
+        rule_file: Optional specific rule file name
+        
+    Returns:
+        list: Rule documents
+    """
+    with get_connection() as conn:
+        if rule_file:
+            if workspace_id is not None:
+                cursor = conn.execute(
+                    "SELECT * FROM rule_documents WHERE rule_file = ? AND workspace_id = ?",
+                    (rule_file, workspace_id)
+                )
+            else:
+                cursor = conn.execute(
+                    "SELECT * FROM rule_documents WHERE rule_file = ? AND workspace_id IS NULL",
+                    (rule_file,)
+                )
+        else:
+            if workspace_id is not None:
+                cursor = conn.execute(
+                    "SELECT * FROM rule_documents WHERE workspace_id = ? ORDER BY rule_file",
+                    (workspace_id,)
+                )
+            else:
+                cursor = conn.execute(
+                    "SELECT * FROM rule_documents WHERE workspace_id IS NULL ORDER BY rule_file"
+                )
+        return [dict(row) for row in cursor.fetchall()]
 
 
 def get_rules(workspace_id: int) -> list[dict[str, Any]]:
