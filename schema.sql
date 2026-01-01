@@ -192,7 +192,7 @@ INSERT OR IGNORE INTO rules (rule_name, category, priority, condition, action) V
 
 -- Workspace configuration indexes
 CREATE INDEX IF NOT EXISTS idx_rules_workspace ON cursor_rules(workspace_id);
-CREATE INDEX IF NOT EXISTS idx_rules_active ON cursor_rules(is_active);
+CREATE INDEX IF NOT EXISTS idx_cursor_rules_active ON cursor_rules(is_active);
 CREATE INDEX IF NOT EXISTS idx_integrations_workspace ON integrations(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_integrations_type ON integrations(integration_type);
 CREATE INDEX IF NOT EXISTS idx_integrations_active ON integrations(is_active);

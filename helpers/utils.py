@@ -243,22 +243,21 @@ def cleanup_all(days: int = 30) -> None:
     print(f"Cleanup complete: {expired} expired contexts, {old_actions} old actions removed")
 
 
-# Integration clients (consolidated from integration_clients.py)
+# Integration clients (consolidated - stubs for convenience, implement as needed)
+import os
+
 class BaseClient:
     """Base class for integration clients."""
     def __init__(self, api_key_env_var: str):
-        import os
         self.api_key = os.getenv(api_key_env_var)
         if not self.api_key:
-            raise ValueError(f"API key not found in environment variable: {api_key_env_var}")
+            raise ValueError(f"API key not found: {api_key_env_var}")
     def _request(self, method: str, endpoint: str, **kwargs) -> dict:
         raise NotImplementedError
-
 
 class GoogleClient:
     """Google Workspace API client wrapper."""
     def __init__(self, credentials_path: Optional[str] = None):
-        import os
         self.credentials_path = credentials_path or os.getenv("GOOGLE_CREDENTIALS_PATH")
     def get_gmail_service(self): pass
     def get_drive_service(self): pass
@@ -269,11 +268,9 @@ class GoogleClient:
     def read_spreadsheet(self, spreadsheet_id: str, range_name: str) -> list[list]: pass
     def write_spreadsheet(self, spreadsheet_id: str, range_name: str, values: list[list]) -> dict: pass
 
-
 class HubSpotClient:
     """HubSpot CRM API client wrapper."""
     def __init__(self, api_key_env_var: str = "HUBSPOT_API_KEY"):
-        import os
         self.api_key = os.getenv(api_key_env_var)
     def list_contacts(self, limit: int = 10) -> list[dict]: pass
     def get_contact(self, contact_id: str) -> dict: pass
@@ -281,33 +278,23 @@ class HubSpotClient:
     def list_deals(self, limit: int = 10) -> list[dict]: pass
     def create_deal(self, properties: dict) -> dict: pass
 
-
 class OpenAIClient:
     """OpenAI API client wrapper."""
     def __init__(self, api_key_env_var: str = "OPENAI_API_KEY"):
-        import os
         self.api_key = os.getenv(api_key_env_var)
     def chat(self, messages: list[dict], model: str = "gpt-4", **kwargs) -> str: pass
     def complete(self, prompt: str, model: str = "gpt-4", **kwargs) -> str: pass
 
-
 class TavilyClient:
     """Tavily Search API client wrapper."""
     def __init__(self, api_key_env_var: str = "TAVILY_API_KEY"):
-        import os
         self.api_key = os.getenv(api_key_env_var)
     def search(self, query: str, search_depth: str = "advanced", max_results: int = 5) -> list[dict]: pass
     def get_answer(self, query: str) -> str: pass
 
-
 def get_client(integration_type: str, **kwargs):
     """Factory function to get appropriate client."""
-    clients = {
-        "google": GoogleClient,
-        "hubspot": HubSpotClient,
-        "openai": OpenAIClient,
-        "tavily": TavilyClient,
-    }
+    clients = {"google": GoogleClient, "hubspot": HubSpotClient, "openai": OpenAIClient, "tavily": TavilyClient}
     client_class = clients.get(integration_type)
     if not client_class:
         raise ValueError(f"Unknown integration type: {integration_type}")
@@ -389,12 +376,22 @@ docs/
 def generate_vscode_settings() -> str:
     """Generate .vscode/settings.json content."""
     import json
-    from helpers.db_helper import get_preference
+    try:
+        from helpers.db_helper import get_preference
+        tab_size = int(get_preference("tab_size") or 4)
+        format_on_save = get_preference("format_on_save") == "true"
+        auto_save = get_preference("auto_save") == "true"
+    except Exception:
+        # Defaults if DB not available
+        tab_size = 4
+        format_on_save = True
+        auto_save = True
+    
     settings = {
         "editor.fontSize": 14,
-        "editor.tabSize": int(get_preference("tab_size") or 4),
-        "editor.formatOnSave": get_preference("format_on_save") == "true",
-        "files.autoSave": "afterDelay" if get_preference("auto_save") == "true" else "off",
+        "editor.tabSize": tab_size,
+        "editor.formatOnSave": format_on_save,
+        "files.autoSave": "afterDelay" if auto_save else "off",
         "files.autoSaveDelay": 1000,
         "python.defaultInterpreterPath": "python3",
         "python.formatting.provider": "black",
@@ -406,10 +403,15 @@ def generate_vscode_settings() -> str:
 def generate_cli_config() -> str:
     """Generate .cursor/cli-config.json content."""
     import json
-    from helpers.db_helper import get_preference
+    try:
+        from helpers.db_helper import get_preference
+        vim_mode = get_preference("vim_mode") == "true"
+    except Exception:
+        vim_mode = False
+    
     config = {
         "version": 1,
-        "editor": {"vimMode": get_preference("vim_mode") == "true"},
+        "editor": {"vimMode": vim_mode},
         "permissions": {
             "allow": ["Shell(ls)", "Shell(cat)", "Shell(echo)", "Shell(python)", "Shell(pip)", "Shell(git)"],
             "deny": ["Shell(rm -rf /)"]

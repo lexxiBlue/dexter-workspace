@@ -11,7 +11,6 @@ import traceback
 import re
 import json
 from typing import Callable, Any, Optional
-from datetime import datetime, timedelta
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
@@ -254,7 +253,7 @@ def recover_from_error(strategy: str = RecoveryStrategy.FAIL,
                        backoff_factor: float = 2.0):
     """Decorator to recover from errors using specified strategy.
     
-    Enhanced version that uses exponential backoff for retry strategy.
+    Uses retry_with_backoff internally for RETRY strategy to avoid duplication.
     
     Args:
         strategy: Recovery strategy (retry, rollback, skip, fail)
@@ -263,47 +262,41 @@ def recover_from_error(strategy: str = RecoveryStrategy.FAIL,
         backoff_factor: Factor to multiply delay by on each retry
     """
     def decorator(func: Callable) -> Callable:
+        # For RETRY strategy, use retry_with_backoff instead of duplicating logic
+        if strategy == RecoveryStrategy.RETRY:
+            return retry_with_backoff(
+                max_retries=max_retries,
+                initial_delay=initial_delay,
+                backoff_factor=backoff_factor
+            )(func)
+        
+        # For other strategies, use custom logic
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            delay = initial_delay
-            
-            for attempt in range(max_retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    error_msg = f"{func.__name__} failed (attempt {attempt + 1}/{max_retries + 1}): {e}"
-                    
-                    if strategy == RecoveryStrategy.RETRY:
-                        if attempt < max_retries:
-                            logger.warning(f"{error_msg}. Retrying in {delay}s...")
-                            time.sleep(delay)
-                            delay *= backoff_factor
-                            continue
-                        else:
-                            logger.error(f"{error_msg}. Max retries exceeded.")
-                            raise
-                    
-                    elif strategy == RecoveryStrategy.ROLLBACK:
-                        logger.error(f"{error_msg}. Attempting rollback...")
-                        # Try to rollback if possible
-                        try:
-                            if 'action_id' in kwargs:
-                                # ActionVerifier is now in this module
-                                ActionVerifier.rollback_action(
-                                    kwargs['action_id'],
-                                    f"Error recovery rollback: {str(e)}"
-                                )
-                        except Exception as rollback_error:
-                            logger.error(f"Rollback failed: {rollback_error}")
-                        raise
-                    
-                    elif strategy == RecoveryStrategy.SKIP:
-                        logger.warning(f"{error_msg}. Skipping operation.")
-                        return None
-                    
-                    else:  # FAIL
-                        logger.error(f"{error_msg}. Failing operation.")
-                        raise
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                error_msg = f"{func.__name__} failed: {e}"
+                
+                if strategy == RecoveryStrategy.ROLLBACK:
+                    logger.error(f"{error_msg}. Attempting rollback...")
+                    try:
+                        if 'action_id' in kwargs:
+                            ActionVerifier.rollback_action(
+                                kwargs['action_id'],
+                                f"Error recovery rollback: {str(e)}"
+                            )
+                    except Exception as rollback_error:
+                        logger.error(f"Rollback failed: {rollback_error}")
+                    raise
+                
+                elif strategy == RecoveryStrategy.SKIP:
+                    logger.warning(f"{error_msg}. Skipping operation.")
+                    return None
+                
+                else:  # FAIL
+                    logger.error(f"{error_msg}. Failing operation.")
+                    raise
         
         return wrapper
     return decorator
