@@ -1,53 +1,103 @@
 {
   "mcpServers": {
     "github": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
+      "command": "node",
+      "args": ["-e", "require('@modelcontextprotocol/server-github').main()"],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
+        "GITHUB_REPOSITORY": "lexxiBlue/dexter-workspace"
       },
-      "description": "GitHub MCP server for repository operations (files, PRs, issues)",
-      "capabilities": [
-        "read_files",
-        "write_files",
-        "create_pull_requests",
-        "manage_issues",
-        "search_code"
+      "disabled": false,
+      "alwaysAllow": [
+        "create_pull_request",
+        "create_issue",
+        "list_issues",
+        "get_issue",
+        "search_repositories"
       ]
     },
     "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "${WORKSPACE_ROOT}"
-      ],
-      "description": "Local filesystem access scoped to workspace root",
-      "capabilities": [
-        "read_files",
-        "write_files",
+      "command": "node",
+      "args": ["-e", "require('@modelcontextprotocol/server-filesystem').main()"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "${PWD}"
+      },
+      "disabled": false,
+      "alwaysAllow": [
+        "read_file",
         "list_directory",
-        "create_directory"
-      ],
-      "security": {
-        "allowedPaths": [
-          "${WORKSPACE_ROOT}"
-        ],
-        "deniedPaths": [
-          "${WORKSPACE_ROOT}/.env",
-          "${WORKSPACE_ROOT}/.git",
-          "${WORKSPACE_ROOT}/dexter.db"
-        ]
-      }
+        "search_files"
+      ]
     }
   },
-  "globalShortcut": "Ctrl+Shift+M",
-  "autoStart": true,
-  "logging": {
-    "level": "info",
-    "file": ".cache/mcp-servers.log"
+  "contextPinning": {
+    "enabled": true,
+    "pinnedFiles": [
+      "dexter.sql",
+      "schema.sql",
+      "helpers/db_helper.py",
+      "helpers/integration_clients.py",
+      ".cursor/commands.md",
+      ".cursor/rules/dexter-context.md"
+    ],
+    "description": "Core schema + helpers + domain rules. Loaded at /Handoff for context persistence."
+  },
+  "longContextCaching": {
+    "enabled": true,
+    "ttlMinutes": 60,
+    "description": "Cache schema + domain rules for 1hr. Reduces token cost ~90%."
+  },
+  "copilotIntegration": {
+    "model": "gpt-4o",
+    "fallback": "claude-3.5-sonnet",
+    "telemetry": true,
+    "cacheSchema": true,
+    "maxContextTokens": 160000,
+    "reservedForResponse": 40000
+  },
+  "agentBehavior": {
+    "autoCommit": false,
+    "requireManualPush": true,
+    "prDriven": true,
+    "neverDirectMainCommits": true,
+    "sqlInjectionCheck": true,
+    "secretScannerEnabled": true
+  },
+  "rules": {
+    "loadOnStartup": [
+      ".cursor/commands.md",
+      ".cursor/rules/github-integration.md",
+      ".cursor/rules/project-rules.md",
+      ".cursor/rules/common-pitfalls.md",
+      ".cursor/rules/dexter-context.md"
+    ],
+    "description": "Load all Cursor rules + domain context at startup. Agents follow these rules strictly."
+  },
+  "testing": {
+    "autoRunTestsAfterEdit": false,
+    "testCommand": "pytest tests/ -v --tb=short",
+    "coverageMinimum": 80,
+    "lintCommand": "ruff check . && mypy --strict helpers/ domain/"
+  },
+  "gitWorkflow": {
+    "branchingStrategy": "feature-based",
+    "requiredPrefixes": ["feature/", "fix/", "docs/", "chore/", "refactor/"],
+    "commitFormat": "[type] Description",
+    "prRequired": true,
+    "directMainPushBlocked": true
+  },
+  "contextOptimization": {
+    "maxFileSizeLines": 500,
+    "skipPatterns": [".git", "node_modules", ".venv", "__pycache__", "*.pyc"],
+    "lazyLoadLargeFiles": true,
+    "description": "Keep context tight. Skip build artifacts. Load file snippets instead of full 1000+ line files."
+  },
+  "securityChecks": {
+    "blockHardcodedSecrets": true,
+    "blockEvalExec": true,
+    "blockPickle": true,
+    "requireParameterizedQueries": true,
+    "scanEnvVars": true,
+    "description": "Agent auto-rejects code with secrets, injection risk, or unsafe patterns."
   }
 }
