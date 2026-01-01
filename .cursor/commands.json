@@ -11,7 +11,7 @@
         "Before doing any work in this session, you MUST:",
         "1. Inspect the repository root to understand the layout.",
         "2. Load the database schema from schema.sql if present.",
-        "3. Read .cursor/rules/*.mdc and .cursor/rules/*.md files (Cursor IDE auto-loads these). Also check rule_documents table in database for additional workspace-specific rules. Treat these as hard constraints.",
+        "3. Load rules from rule_documents table in database (source of truth). Cursor IDE may auto-load .cursor/rules/*.mdc files if present. Treat database rules as hard constraints.",
         "4. Inspect helpers/db_helper.py, helpers/reliability.py, helpers/utils.py, and helpers/agent_brain.py to understand the core helper contracts.",
         "",
         "Once you have done this, start your first reply by:",
