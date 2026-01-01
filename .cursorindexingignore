@@ -1,0 +1,16 @@
+# Test fixtures
+tests/fixtures/
+__mocks__/
+
+# Compiled files
+*.pyc
+*.class
+*.o
+
+# Auto-generated
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
