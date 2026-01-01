@@ -1,3 +1,8 @@
+---
+description: github-integration
+ruleType: always
+---
+
 # GitHub & Language Model Integration Rules
 
 **Scope**: Cursor agent optimization for GitHub-first workflows with production LM quality gates.
@@ -8,7 +13,7 @@
 
 ### Context Window Management
 - **Max context**: 200k tokens (reserve 20% for responses)
-- **Prioritize**: `dexter.sql`, `schema.sql`, `helpers/`, active branch diffs
+- **Prioritize**: `schema.sql`, `helpers/`, active branch diffs
 - **Skip**: `.git/` objects, build artifacts, node_modules, `.venv/`
 - **Lazy load**: Load full files only if directly modified; use file snippets for reference
 
@@ -21,7 +26,7 @@
 - **Enable**: GitHub Copilot for Cursor (requires GitHub Pro or Team)
 - **Model selection**: Use `gpt-4o` for complex logic, `claude-3.5-sonnet` for quick fixes
 - **Telemetry**: Accept GitHub Copilot telemetry to improve suggestions
-- **Cache**: Enable long-context caching for `dexter.sql` (saves tokens ~90%)
+- **Cache**: Enable long-context caching for `schema.sql` (saves tokens ~90%)
 
 ---
 
@@ -38,7 +43,7 @@ Before accepting LM output, verify:
 ### Context Injection Rules
 **When asking LM to write code:**
 1. Provide exact file path + current content snippet
-2. Include schema context if DB-related (`dexter.sql` relevant sections)
+2. Include schema context if DB-related (`schema.sql` relevant sections)
 3. Show test case or expected behavior
 4. Reference existing patterns from `helpers/`
 
@@ -86,7 +91,7 @@ Test: `get_integration_by_id('abc-123')` should match schema
 
 ### Optimization in practice:
 - Use `/Handoff` to load schema once at session start
-- Pin `dexter.sql` + `schema.sql` in chat context (reusable across requests)
+- Pin `schema.sql` in chat context (reusable across requests)
 - Batch similar tasks (e.g., "Write 3 helper functions" in one prompt)
 - Avoid regenerating same logic; ask for tweaks instead
 
@@ -128,7 +133,7 @@ Test: `get_integration_by_id('abc-123')` should match schema
    - LM sometimes generates broken fixtures
 
 4. **Pin your schema**
-   - Start every session: "Context: [paste dexter.sql]"
+   - Start every session: "Context: [paste schema.sql]"
    - Then ask to write queries
    - Prevents hallucinated columns
 
@@ -144,7 +149,7 @@ Test: `get_integration_by_id('abc-123')` should match schema
 - [ ] Signed into GitHub via Cursor (Accounts menu)
 - [ ] `.github/workflows/` configured (CI/CD auto-runs on PR)
 - [ ] `.env.template` committed (never `.env`)
-- [ ] `schema.sql` + `dexter.sql` in Cursor project root
+- [ ] `schema.sql` in Cursor project root
 - [ ] `.cursormcp-servers.json` has GitHub MCP config
 - [ ] Tested `/Handoff` command locally
 - [ ] Reviewed and accepted telemetry prompt (improves suggestions)

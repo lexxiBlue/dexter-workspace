@@ -1,3 +1,8 @@
+---
+description: common-pitfalls
+ruleType: always
+---
+
 # Common Cursor Pitfalls & Workarounds
 
 **Based on**: GitHub issues, Reddit r/Cursor, community feedback (Jan 2026)
@@ -59,7 +64,7 @@
   def db_fixture():
       """Create temp DB, load schema, yield connection, then cleanup."""
       conn = sqlite3.connect(":memory:")
-      conn.execute(open("dexter.sql").read())
+      conn.execute(open("schema.sql").read())
       yield conn
       conn.close()
   ```
@@ -128,7 +133,7 @@
 **Fix**:
 - **Pin schema BEFORE asking for SQL**
   ```
-  Schema context (from dexter.sql):
+  Schema context (from schema.sql):
   
   CREATE TABLE customers (
       id TEXT PRIMARY KEY,
@@ -250,7 +255,7 @@
 
 ## CHECKLIST: Before Accepting LM Code
 
-- [ ] **Schema pinned**: Did I paste `dexter.sql` relevant sections?
+- [ ] **Schema pinned**: Did I paste `schema.sql` relevant sections?
 - [ ] **Test passes**: `pytest tests/ -v` runs clean?
 - [ ] **Linting passes**: `ruff check .` has no errors?
 - [ ] **No hallucinations**: Verify all functions/columns exist

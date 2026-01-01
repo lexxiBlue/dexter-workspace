@@ -33,7 +33,6 @@
   "contextPinning": {
     "enabled": true,
     "pinnedFiles": [
-      "dexter.sql",
       "schema.sql",
       "helpers/db_helper.py",
       "helpers/integration_clients.py",

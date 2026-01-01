@@ -1,3 +1,8 @@
+---
+description: dexter-context
+ruleType: always
+---
+
 # Dexter Domain Context for Cursor Agent
 
 **Purpose**: Help Cursor LM understand Dexter's business domain, data model, and integration patterns.
@@ -261,7 +266,7 @@ Runs `ruff check . && mypy --strict helpers/ domain/`
 Tests all integration clients (HubSpot, Shopify).
 
 ### `/db-reset`
-(Dangerous!) Recreates `dexter.db` from `dexter.sql` scratch. Requires confirmation.
+(Dangerous!) Recreates `dexter.db` from `schema.sql` scratch. Requires confirmation.
 
 ---
 

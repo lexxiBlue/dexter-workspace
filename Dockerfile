@@ -18,13 +18,12 @@ COPY requirements.txt* ./
 RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
 
 # Copy schema and helper files
-COPY dexter.sql schema.sql ./
+COPY schema.sql ./
 COPY helpers/ ./helpers/
 COPY domains/ ./domains/
 
-# Initialize database
-RUN sqlite3 dexter.db < dexter.sql && \
-    if [ -f schema.sql ]; then sqlite3 dexter.db < schema.sql; fi
+# Initialize database schema (database file should be volume-mounted in production)
+RUN sqlite3 dexter.db < schema.sql || echo "Note: Database will be initialized at runtime if volume-mounted"
 
 # Set environment variables
 ENV PYTHONPATH=/workspace

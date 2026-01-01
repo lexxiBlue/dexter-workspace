@@ -8,7 +8,7 @@ Dexter is a structured workspace framework designed for autonomous AI agent oper
 
 ### Core Principles
 
-- **Single Source of Truth**: `dexter.sql` + `schema.sql` define all persistent state
+- **Single Source of Truth**: `schema.sql` defines all persistent state
 - **Domain Segregation**: Integrations organized by concern (`google/`, `hubspot/`, `automation/`, `projects/`)
 - **Guardrailed Autonomy**: Autonomous for non-destructive tasks, explicit confirmation for state changes
 - **Audit Trail**: All meaningful actions logged via DB and workspace helpers
@@ -26,10 +26,11 @@ Agent Request → db_helper.py → SQLite (dexter.db)
 
 **Guardrails in Practice**:
 - DB writes go through `helpers/db_helper.py` only
-- External API calls route through `helpers/integration_clients.py`
+- External API calls route through `helpers/utils.py` (get_client)
 - Destructive operations require explicit confirmation
 - All actions logged with timestamp, user, and change details
 - Agent scope limited to workspace boundaries
+- Rules stored in database, synced to `.cursor/rules/*.mdc` for Cursor IDE
 
 ## Repository Structure
 
@@ -46,10 +47,12 @@ dexter-workspace/
 │   └── projects/         # Per-project scaffolding
 ├── helpers/              # Core control layer
 │   ├── db_helper.py               # DB access + guardrails
-│   ├── integration_clients.py     # External system abstraction
-│   └── workspace_generator.py     # Meta-tooling for scaffolding
-├── dexter.sql            # Canonical database schema (source of truth)
-├── schema.sql            # Additional schema definitions/migrations
+│   ├── reliability.py             # Error handling, validation, decorators
+│   ├── utils.py                   # Health checks, integrations, workspace gen
+│   ├── agent_brain.py             # Database-backed agent intelligence
+│   ├── rule_loader.py             # Load rules from database
+│   └── rule_sync.py               # Sync rules between DB and files (.mdc)
+├── schema.sql            # Consolidated database schema (source of truth)
 ├── dexter.db             # Runtime SQLite database (ephemeral in dev)
 ├── .env.template         # Configuration template
 └── README.md             # This file
@@ -59,7 +62,7 @@ dexter-workspace/
 
 | File | Purpose | Mutability |
 |------|---------|------------|
-| `dexter.sql` / `schema.sql` | Canonical DB schema | Version controlled, manual edits only |
+| `schema.sql` | Canonical DB schema | Version controlled, manual edits only |
 | `dexter.db` | Runtime database | Ephemeral in dev, backed up in prod |
 | `helpers/db_helper.py` | DB access layer | Core contract, test thoroughly |
 | `helpers/integration_clients.py` | External API layer | Core contract, extend per domain |
@@ -86,7 +89,6 @@ cp .env.template .env
 # Edit .env with your configuration (API keys, workspace settings)
 
 # 3. Initialize the database
-sqlite3 dexter.db < dexter.sql
 sqlite3 dexter.db < schema.sql
 
 # 4. Install Python dependencies
@@ -104,7 +106,7 @@ sqlite3 dexter.db "SELECT name FROM sqlite_master WHERE type='table';"
 
 # Test helper imports
 python3 -c "from helpers.db_helper import *; print('✓ DB helper loaded')"
-python3 -c "from helpers.integration_clients import *; print('✓ Integration clients loaded')"
+python3 -c "from helpers.utils import get_client; print('✓ Integration clients loaded')"
 ```
 
 ## Agent Operation
@@ -159,13 +161,13 @@ execute_with_confirmation(
 ### Database Changes
 
 ```bash
-# 1. Edit dexter.sql or schema.sql (version controlled)
+# 1. Edit schema.sql (version controlled)
 # 2. Test migration
-sqlite3 test.db < dexter.sql && sqlite3 test.db < schema.sql
+sqlite3 test.db < schema.sql
 # 3. Apply to dev database
 sqlite3 dexter.db < migration.sql
 # 4. Commit schema changes
-git add dexter.sql schema.sql
+git add schema.sql
 git commit -m "Add schema for new_feature"
 ```
 
@@ -180,17 +182,19 @@ pytest tests/
 
 # Validate database schema
 sqlite3 dexter.db ".schema" > schema_current.sql
-diff <(sqlite3 temp.db < dexter.sql && sqlite3 temp.db ".schema") schema_current.sql
+diff <(sqlite3 temp.db < schema.sql && sqlite3 temp.db ".schema") schema_current.sql
 ```
 
 ## CI/CD Pipeline
 
 GitHub Actions workflow (`.github/workflows/ci-python-docker.yml`) runs on every push:
 
-1. **Lint**: Ruff checks Python code quality
+1. **Lint**: Ruff checks Python code quality (with auto-fix)
 2. **Test**: pytest validates helper functions
-3. **Build**: Docker image packages workspace for deployment
-4. **Publish**: Tagged releases pushed to container registry
+3. **Schema Validation**: SQLite schema integrity checks
+4. **Build**: Docker image packages workspace for deployment
+5. **Security Scan**: Trivy vulnerability scanning
+6. **Publish**: Tagged releases pushed to container registry
 
 ## MCP Integration
 
@@ -215,7 +219,7 @@ echo "dexter.db" >> .gitignore  # Ephemeral in dev
 
 ### Database Backups
 
-**Development**: `dexter.db` is ephemeral; recreate from `dexter.sql` + `schema.sql`
+**Development**: `dexter.db` is ephemeral; recreate from `schema.sql`
 
 **Production**: Implement automated backups
 ```bash
@@ -237,13 +241,12 @@ sqlite3 dexter.db ".backup dexter_$(date +%Y%m%d_%H%M%S).db"
 ```bash
 # Reset dev database
 rm dexter.db
-sqlite3 dexter.db < dexter.sql
 sqlite3 dexter.db < schema.sql
 ```
 
 ### Agent Not Following Rules
 
-Check `.cursor/rules/` for behavior constraints and verify Cursor settings.
+Check `.cursor/rules/*.mdc` files for behavior constraints. Rules are stored in the database (`rule_documents` table) and synced to files. Use `helpers/rule_sync.py` to sync changes.
 
 ### Import Errors
 
@@ -267,7 +270,7 @@ This is a personal workspace framework. If adapting for your use:
 1. Fork the repository
 2. Customize domains for your integrations
 3. Update `.cursor/rules/` for your agent protocol
-4. Modify `dexter.sql` for your schema
+4. Modify `schema.sql` for your schema
 
 ## License
 
