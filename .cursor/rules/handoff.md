@@ -1,3 +1,8 @@
+---
+description: handoff
+ruleType: always
+---
+
 # Cursor Rules - Dexter Workspace
 
 These rules shape how the Cursor agent behaves in this repository, including the `/Handoff` command.

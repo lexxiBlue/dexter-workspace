@@ -1,3 +1,8 @@
+---
+description: github-integration
+ruleType: always
+---
+
 # GitHub & Language Model Integration Rules
 
 **Scope**: Cursor agent optimization for GitHub-first workflows with production LM quality gates.

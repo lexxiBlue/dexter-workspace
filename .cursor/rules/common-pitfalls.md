@@ -1,3 +1,8 @@
+---
+description: common-pitfalls
+ruleType: always
+---
+
 # Common Cursor Pitfalls & Workarounds
 
 **Based on**: GitHub issues, Reddit r/Cursor, community feedback (Jan 2026)

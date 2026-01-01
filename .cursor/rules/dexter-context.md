@@ -1,3 +1,8 @@
+---
+description: dexter-context
+ruleType: always
+---
+
 # Dexter Domain Context for Cursor Agent
 
 **Purpose**: Help Cursor LM understand Dexter's business domain, data model, and integration patterns.

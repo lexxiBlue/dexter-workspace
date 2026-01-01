@@ -1,3 +1,8 @@
+---
+description: project-rules
+ruleType: always
+---
+
 # Dexter Workspace: Project Rules & Quality Gates
 
 **Purpose**: Enforce consistency across codebase via Cursor agent rules.
