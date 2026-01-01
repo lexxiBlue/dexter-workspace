@@ -281,27 +281,41 @@ def get_integrations(workspace_id: int) -> list[dict[str, Any]]:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def get_preference(key: str) -> Optional[str]:
-    """Get a preference value."""
+def get_preference(key: str, workspace_id: Optional[int] = None) -> Optional[str]:
+    """Get a preference value (workspace-scoped or global)."""
     with get_connection() as conn:
-        cursor = conn.execute(
-            "SELECT value FROM preferences WHERE key = ?",
-            (key,)
-        )
+        if workspace_id is None:
+            cursor = conn.execute(
+                "SELECT value FROM preferences WHERE workspace_id IS NULL AND key = ?",
+                (key,),
+            )
+        else:
+            cursor = conn.execute(
+                "SELECT value FROM preferences WHERE workspace_id = ? AND key = ?",
+                (workspace_id, key),
+            )
         row = cursor.fetchone()
         return row["value"] if row else None
 
 
-def set_preference(key: str, value: str, description: str = ""):
-    """Set a preference value."""
+def set_preference(
+    key: str,
+    value: str,
+    description: str = "",
+    workspace_id: Optional[int] = None,
+) -> None:
+    """Set a preference value (workspace-scoped or global)."""
     with get_connection() as conn:
         conn.execute(
             """
-            INSERT INTO preferences (key, value, description)
-            VALUES (?, ?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+            INSERT INTO preferences (workspace_id, key, value, description)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(workspace_id, key) DO UPDATE SET
+                value = excluded.value,
+                description = excluded.description,
+                updated_at = CURRENT_TIMESTAMP
             """,
-            (key, value, description, value)
+            (workspace_id, key, value, description),
         )
 
 
@@ -334,8 +348,17 @@ def list_templates() -> list[dict[str, Any]]:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def log_action(workspace_id: Optional[int], action_type: str, target: Optional[str] = None,
-               description: Optional[str] = None, status: str = "completed") -> int:
+def log_action(
+    workspace_id: Optional[int],
+    action_type: str,
+    target: Optional[str] = None,
+    description: Optional[str] = None,
+    status: str = "completed",
+    *,
+    agent_session_id: Optional[int] = None,
+    project_id: Optional[int] = None,
+    rollback_info: Optional[str] = None,
+) -> int:
     """Log an action to the action_log table.
     
     Args:
@@ -344,6 +367,9 @@ def log_action(workspace_id: Optional[int], action_type: str, target: Optional[s
         target: Target of the action (optional)
         description: Description of the action (optional)
         status: Status of the action (default: "completed")
+        agent_session_id: Optional agent session ID
+        project_id: Optional project ID
+        rollback_info: Optional rollback information
         
     Returns:
         int: ID of the logged action
@@ -351,20 +377,43 @@ def log_action(workspace_id: Optional[int], action_type: str, target: Optional[s
     with get_connection() as conn:
         cursor = conn.execute(
             """
-            INSERT INTO action_log (workspace_id, action_type, target, description, status)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO action_log (
+                agent_session_id,
+                project_id,
+                workspace_id,
+                action_type,
+                target,
+                description,
+                status,
+                rollback_info
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (workspace_id, action_type, target, description, status)
+            (
+                agent_session_id,
+                project_id,
+                workspace_id,
+                action_type,
+                target,
+                description,
+                status,
+                rollback_info,
+            ),
         )
         return cursor.lastrowid
 
 
-def get_context(workspace_id: Optional[int], key: str) -> Optional[str]:
-    """Get context value for a workspace and key.
+def get_context(
+    workspace_id: Optional[int],
+    key: str,
+    agent_session_id: Optional[int] = None,
+) -> Optional[str]:
+    """Get context value for a workspace/session and key.
     
     Args:
         workspace_id: ID of the workspace (optional)
         key: Context key
+        agent_session_id: Optional agent session ID
         
     Returns:
         str: Context value, or None if not found or expired
@@ -372,37 +421,45 @@ def get_context(workspace_id: Optional[int], key: str) -> Optional[str]:
     with get_connection() as conn:
         cursor = conn.execute(
             """
-            SELECT value FROM context 
-            WHERE workspace_id = ? AND key = ? 
-            AND (expires_at IS NULL OR expires_at > datetime('now'))
+            SELECT value FROM context
+            WHERE (? IS NULL OR agent_session_id = ?)
+              AND workspace_id IS ?
+              AND key = ?
+              AND (expires_at IS NULL OR expires_at > datetime('now'))
             """,
-            (workspace_id, key)
+            (agent_session_id, agent_session_id, workspace_id, key),
         )
         row = cursor.fetchone()
         return row["value"] if row else None
 
 
-def set_context(workspace_id: Optional[int], key: str, value: str, 
-                expires_at: Optional[str] = None) -> None:
-    """Set context value for a workspace and key.
+def set_context(
+    workspace_id: Optional[int],
+    key: str,
+    value: str,
+    expires_at: Optional[str] = None,
+    agent_session_id: Optional[int] = None,
+) -> None:
+    """Set context value for a workspace/session and key.
     
     Args:
         workspace_id: ID of the workspace (optional)
         key: Context key
         value: Context value
         expires_at: Optional expiration timestamp (ISO format)
+        agent_session_id: Optional agent session ID
     """
     with get_connection() as conn:
         conn.execute(
             """
-            INSERT INTO context (workspace_id, key, value, expires_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(workspace_id, key) DO UPDATE SET
+            INSERT INTO context (agent_session_id, workspace_id, key, value, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(agent_session_id, workspace_id, key) DO UPDATE SET
                 value = excluded.value,
                 expires_at = excluded.expires_at,
                 updated_at = CURRENT_TIMESTAMP
             """,
-            (workspace_id, key, value, expires_at)
+            (agent_session_id, workspace_id, key, value, expires_at),
         )
 
 
