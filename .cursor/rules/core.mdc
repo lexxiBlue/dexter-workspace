@@ -6,6 +6,14 @@ ruleType: always
 
 # Core Development Guidelines
 
+## Technical Bounds (First Priority)
+
+**Never assume. Always verify.** Before making architectural changes:
+- Check official documentation for tool requirements
+- Verify files aren't auto-loaded or required by tools
+- Test behavior before removing/modifying system files
+- Stay within technical constraints of all tools (Cursor IDE, databases, etc.)
+
 ## Code Quality
 - Write clean, maintainable, well-documented code
 - Use meaningful variable and function names

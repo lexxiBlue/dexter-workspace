@@ -6,9 +6,20 @@ ruleType: always
 
 # Technical Bounds & Requirements Verification
 
+**THIS RULE APPLIES TO EVERYTHING** - All actions, changes, and decisions must respect technical bounds.
+
 ## Core Principle
 
 **Never assume. Always verify.** Before making architectural changes or removing/modifying system files, verify the technical requirements of the tools and systems in use.
+
+**This is not optional** - It applies to:
+- Code changes
+- File modifications
+- Architectural decisions
+- Tool integrations
+- Database changes
+- Configuration updates
+- Any system-level change
 
 ## Before Any Architectural Change
 
