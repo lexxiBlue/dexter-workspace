@@ -1,0 +1,58 @@
+---
+description: Technical bounds and requirements verification
+globs: ["**/*"]
+ruleType: always
+---
+
+# Technical Bounds & Requirements Verification
+
+## Core Principle
+
+**Never assume. Always verify.** Before making architectural changes or removing/modifying system files, verify the technical requirements of the tools and systems in use.
+
+## Before Any Architectural Change
+
+1. **Check Official Documentation**
+   - Verify tool requirements (e.g., Cursor IDE requires `.cursor/rules/*.mdc` files)
+   - Check if files are auto-loaded or required by the system
+   - Understand dependencies and constraints
+
+2. **Verify Current Behavior**
+   - Test what happens if you remove/modify a file
+   - Check if tools auto-load files from specific locations
+   - Understand the actual vs. assumed behavior
+
+3. **Research Before Refactoring**
+   - Don't assume files are "just documentation" - they may be required
+   - Check if tools have hard requirements vs. soft preferences
+   - Verify compatibility before making changes
+
+## Red Flags (Stop and Verify)
+
+- About to remove/modify files in `.cursor/` directory
+- Changing file formats or locations that tools might depend on
+- Assuming files are "just for humans" without verification
+- Making changes based on assumptions rather than documentation
+
+## Required Actions
+
+- **Before removing files**: Verify they're not required by tools
+- **Before changing structure**: Check if tools auto-load from specific paths
+- **Before architectural changes**: Research official requirements first
+- **When uncertain**: Ask clarifying questions or verify in documentation
+
+## Examples
+
+❌ **Wrong**: "Let's move `.mdc` files to database - they're just markdown"
+✅ **Right**: "Cursor IDE auto-loads `.mdc` files from `.cursor/rules/` - we need them there. Use database as source of truth with sync."
+
+❌ **Wrong**: "This file seems redundant, let's delete it"
+✅ **Right**: "Verify this file isn't required by Cursor IDE or other tools before removing"
+
+## Verification Checklist
+
+- [ ] Checked official documentation for requirements
+- [ ] Verified file is not auto-loaded by tools
+- [ ] Tested behavior if file is removed/modified
+- [ ] Confirmed compatibility with existing systems
+- [ ] Understood actual vs. assumed behavior
