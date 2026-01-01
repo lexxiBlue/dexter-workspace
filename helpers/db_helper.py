@@ -38,8 +38,11 @@ def get_connection(db_path: Path = DB_PATH, retry_count: int = 3):
         try:
             conn = sqlite3.connect(str(db_path), timeout=10.0)
             conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("PRAGMA journal_mode = WAL")  # Better concurrency
+            # Essential PRAGMA settings for reliability and performance
+            conn.execute("PRAGMA foreign_keys = ON")  # Enforce referential integrity
+            conn.execute("PRAGMA journal_mode = WAL")  # Better concurrency (readers don't block writers)
+            conn.execute("PRAGMA synchronous = NORMAL")  # Balance safety and performance with WAL
+            conn.execute("PRAGMA busy_timeout = 30000")  # Wait up to 30s for locks (better concurrency)
             break
         except sqlite3.Error as e:
             last_error = e

@@ -78,14 +78,21 @@ _api_call_limiter = RateLimiter(max_calls=50, time_window=60)    # 50 API calls 
 
 
 def retry_with_backoff(max_retries: int = 3, initial_delay: float = 1.0, 
-                      backoff_factor: float = 2.0, exceptions: tuple = (Exception,)):
+                      backoff_factor: float = 2.0, 
+                      exceptions: tuple = (Exception,)):
     """Decorator for retrying functions with exponential backoff.
+    
+    Best practice: Specify specific exceptions (e.g., sqlite3.OperationalError) 
+    rather than generic Exception to avoid retrying on programming errors.
     
     Args:
         max_retries: Maximum number of retry attempts
         initial_delay: Initial delay in seconds
         backoff_factor: Factor to multiply delay by on each retry
-        exceptions: Tuple of exceptions to catch and retry on
+        exceptions: Tuple of exceptions to catch and retry on. 
+                   Defaults to Exception, but should be specific exceptions
+                   for production use (e.g., sqlite3.OperationalError, 
+                   requests.RequestException, etc.)
     """
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
