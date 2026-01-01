@@ -16,7 +16,7 @@ from helpers.reliability import (
     log_execution_time,
     _db_write_limiter,
 )
-from helpers.action_verifier import require_verification, ActionVerifier
+from helpers.reliability import require_verification, ActionVerifier
 from helpers.reliability import recover_from_error, RecoveryStrategy, log_error_with_context
 from helpers.context_manager import cleanup_expired_contexts, set_context_with_ttl
 
@@ -53,12 +53,9 @@ def safe_delete_workspace(workspace_id: int, confirm: bool = False):
     if not confirm:
         raise ValueError("Deletion requires confirm=True")
     
-    # Create checkpoint before deletion
-    action_id = ActionVerifier.create_checkpoint(
-        action_id=None,  # Would be set by require_verification decorator
-        checkpoint_type='pre_delete',
-        state_snapshot='{"workspace_id": ' + str(workspace_id) + '}'
-    )
+    # Note: require_verification decorator automatically creates action_id
+    # For checkpoint creation, you would use ActionVerifier.create_checkpoint()
+    # after the action_id is available from the decorator
     
     # Perform deletion (implementation would go here)
     # This is just an example

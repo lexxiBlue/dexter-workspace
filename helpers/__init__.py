@@ -23,7 +23,6 @@ from .integration_clients import get_client
 # Reliability and validation modules
 from . import validation
 from . import reliability
-from . import action_verifier
 from . import context_manager
 
 __all__ = [
@@ -50,6 +49,5 @@ __all__ = [
     # Reliability modules
     "validation",
     "reliability",
-    "action_verifier",
     "context_manager",
 ]
