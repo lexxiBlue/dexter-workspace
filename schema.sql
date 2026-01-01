@@ -107,7 +107,55 @@ INSERT OR IGNORE INTO preferences (key, value, description) VALUES
     ('context_length', '8000', 'AI context length'),
     ('privacy_mode', 'true', 'Enable privacy mode');
 
+-- ============================================================================
+-- DOMAIN TABLES: Equipment Rental & Procurement System
+-- ============================================================================
+
+-- Customers: External actors (businesses, individuals) ordering equipment
+CREATE TABLE IF NOT EXISTS customers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    company TEXT,
+    integration_type TEXT,
+    integration_id TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Orders: Equipment rental requests from customers
+CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    equipment_type TEXT NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    total_price REAL NOT NULL,
+    status TEXT DEFAULT 'pending',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
+
+-- Integration configurations: Credentials and settings for external service sync
+CREATE TABLE IF NOT EXISTS integration_configs (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    integration_type TEXT NOT NULL,
+    api_key TEXT NOT NULL,
+    api_base_url TEXT,
+    sync_status TEXT DEFAULT 'active',
+    last_sync_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    UNIQUE (customer_id, integration_type)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_rules_workspace ON cursor_rules(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_integrations_workspace ON integrations(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_mcp_workspace ON mcp_servers(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_integration_configs_customer ON integration_configs(customer_id);
