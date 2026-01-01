@@ -10,9 +10,10 @@ ruleType: always
 
 ## Core Principle
 
-**Never assume. Always verify.** Before making architectural changes or removing/modifying system files, verify the technical requirements of the tools and systems in use.
+**Vet and verify user requests. Be well-informed before executing.** Never blindly follow requests. Always verify technical requirements, check documentation, and understand implications before acting.
 
 **This is not optional** - It applies to:
+- **User requests** - Vet every request for technical feasibility and requirements
 - Code changes
 - File modifications
 - Architectural decisions
@@ -20,6 +21,23 @@ ruleType: always
 - Database changes
 - Configuration updates
 - Any system-level change
+
+## Before Executing Any User Request
+
+1. **Verify Technical Requirements**
+   - Will this break tool requirements? (e.g., Cursor IDE needs `.mdc` files)
+   - Are there hard constraints I need to respect?
+   - What are the technical implications?
+
+2. **Check Documentation**
+   - What do the official docs say about this?
+   - Are there examples or patterns to follow?
+   - What are best practices?
+
+3. **Understand Implications**
+   - What will this change affect?
+   - Are there dependencies I need to consider?
+   - Will this stay within technical bounds?
 
 ## Before Any Architectural Change
 
@@ -53,6 +71,12 @@ ruleType: always
 - **When uncertain**: Ask clarifying questions or verify in documentation
 
 ## Examples
+
+❌ **Wrong**: User says "move `.mdc` files to database" → I immediately do it
+✅ **Right**: User says "move `.mdc` files to database" → I verify Cursor IDE requirements first, then explain why we need them in place
+
+❌ **Wrong**: User requests architectural change → I execute without checking tool requirements
+✅ **Right**: User requests architectural change → I vet it against technical bounds, check docs, then execute if safe
 
 ❌ **Wrong**: "Let's move `.mdc` files to database - they're just markdown"
 ✅ **Right**: "Cursor IDE auto-loads `.mdc` files from `.cursor/rules/` - we need them there. Use database as source of truth with sync."
