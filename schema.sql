@@ -314,13 +314,13 @@ SELECT * FROM rules WHERE is_active = 1 ORDER BY priority;
 
 -- Recent decisions view (last 7 days)
 CREATE VIEW IF NOT EXISTS view_recent_decisions AS
-SELECT * FROM agent_decisions 
+SELECT * FROM agent_decisions
 WHERE created_at > datetime('now', '-7 days')
 ORDER BY created_at DESC;
 
 -- Successful decisions view
 CREATE VIEW IF NOT EXISTS view_successful_decisions AS
-SELECT * FROM agent_decisions 
+SELECT * FROM agent_decisions
 WHERE success = 1
 ORDER BY created_at DESC;
 
@@ -330,7 +330,7 @@ SELECT * FROM integrations WHERE is_active = 1;
 
 -- System statistics view
 CREATE VIEW IF NOT EXISTS view_system_stats AS
-SELECT 
+SELECT
     (SELECT COUNT(*) FROM workspaces) as workspace_count,
     (SELECT COUNT(*) FROM action_log) as action_total,
     (SELECT COUNT(*) FROM action_log WHERE status = 'completed') as action_completed,
@@ -344,7 +344,7 @@ SELECT
 
 -- Agent intelligence summary view (per workspace + global)
 CREATE VIEW IF NOT EXISTS view_agent_intelligence AS
-SELECT 
+SELECT
     w.id as workspace_id,
     (SELECT COUNT(*) FROM agent_knowledge WHERE agent_knowledge.workspace_id = w.id) as knowledge_count,
     (SELECT COUNT(*) FROM agent_decisions WHERE agent_decisions.workspace_id = w.id) as decision_count,
@@ -352,7 +352,7 @@ SELECT
     (SELECT COUNT(*) FROM agent_state WHERE agent_state.workspace_id = w.id) as state_count
 FROM workspaces w
 UNION ALL
-SELECT 
+SELECT
     NULL as workspace_id,
     (SELECT COUNT(*) FROM agent_knowledge WHERE workspace_id IS NULL) as knowledge_count,
     (SELECT COUNT(*) FROM agent_decisions WHERE workspace_id IS NULL) as decision_count,
@@ -361,25 +361,25 @@ SELECT
 
 -- Expired context view (for cleanup)
 CREATE VIEW IF NOT EXISTS view_expired_context AS
-SELECT * FROM context 
-WHERE expires_at IS NOT NULL 
+SELECT * FROM context
+WHERE expires_at IS NOT NULL
 AND expires_at < datetime('now');
 
 -- Old completed actions view (for cleanup)
 CREATE VIEW IF NOT EXISTS view_old_completed_actions AS
-SELECT * FROM action_log 
-WHERE status = 'completed' 
+SELECT * FROM action_log
+WHERE status = 'completed'
 AND timestamp < datetime('now', '-30 days');
 
 -- High confidence knowledge view
 CREATE VIEW IF NOT EXISTS view_high_confidence_knowledge AS
-SELECT * FROM agent_knowledge 
+SELECT * FROM agent_knowledge
 WHERE confidence >= 0.8
 ORDER BY confidence DESC, usage_count DESC;
 
 -- Successful patterns view
 CREATE VIEW IF NOT EXISTS view_successful_patterns AS
-SELECT * FROM agent_patterns 
+SELECT * FROM agent_patterns
 WHERE success_rate >= 0.7
 ORDER BY success_rate DESC, usage_count DESC;
 
