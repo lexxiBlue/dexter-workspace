@@ -10,6 +10,7 @@ import os
 import sqlite3
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -29,8 +30,6 @@ from helpers.db_helper import (
     get_integrations,
     get_preference,
     set_preference,
-    get_template,
-    list_templates,
 )
 
 
@@ -104,178 +103,161 @@ class TestDatabaseInitialization:
                 tables
             ), f"Missing tables: {expected_tables - tables}"
 
+    def test_domain_tables_exist_in_schema(self):
+        """Verify that domain tables (customers, orders, integration_configs) exist in schema.sql."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            schema_path = Path(__file__).parent.parent / "schema.sql"
+
+            init_database(db_path=db_path, schema_path=schema_path)
+
+            # Check for domain tables
+            with get_connection(db_path) as conn:
+                cursor = conn.execute(
+                    """
+                    SELECT name FROM sqlite_master
+                    WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                    ORDER BY name
+                    """
+                )
+                tables = {row[0] for row in cursor.fetchall()}
+
+            domain_tables = {"customers", "orders", "integration_configs"}
+            assert domain_tables.issubset(
+                tables
+            ), f"Missing domain tables: {domain_tables - tables}"
+
 
 class TestWorkspaceHelpers:
     """Test workspace CRUD operations."""
 
-    @pytest.fixture
-    def temp_db(self):
-        """Create a temporary database for testing."""
+    def test_create_and_get_workspace(self):
+        """Test creating and retrieving a workspace."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             schema_path = Path(__file__).parent.parent / "schema.sql"
             init_database(db_path=db_path, schema_path=schema_path)
 
-            # Temporarily override DB_PATH for testing
-            original_db_path = os.environ.get("DB_PATH")
-            os.environ["DB_PATH"] = str(db_path)
+            # Mock DB_PATH for this test scope
+            with mock.patch.dict(os.environ, {"DB_PATH": str(db_path)}):
+                workspace_id = create_workspace(
+                    name="Test Workspace",
+                    description="A test workspace",
+                    project_type="test",
+                )
 
-            yield db_path
+                assert workspace_id is not None, "Workspace ID should not be None"
 
-            # Restore original DB_PATH
-            if original_db_path:
-                os.environ["DB_PATH"] = original_db_path
-            else:
-                os.environ.pop("DB_PATH", None)
+                workspace = get_workspace(workspace_id)
+                assert workspace is not None, "Workspace should be retrievable"
+                assert workspace["name"] == "Test Workspace"
+                assert workspace["description"] == "A test workspace"
+                assert workspace["project_type"] == "test"
 
-    def test_create_and_get_workspace(self, temp_db):
-        """Test creating and retrieving a workspace."""
-        workspace_id = create_workspace(
-            name="Test Workspace",
-            description="A test workspace",
-            project_type="test",
-        )
-
-        assert workspace_id is not None, "Workspace ID should not be None"
-
-        workspace = get_workspace(workspace_id)
-        assert workspace is not None, "Workspace should be retrievable"
-        assert workspace["name"] == "Test Workspace"
-        assert workspace["description"] == "A test workspace"
-        assert workspace["project_type"] == "test"
-
-    def test_list_workspaces(self, temp_db):
+    def test_list_workspaces(self):
         """Test listing all workspaces."""
-        create_workspace(name="Workspace 1")
-        create_workspace(name="Workspace 2")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            schema_path = Path(__file__).parent.parent / "schema.sql"
+            init_database(db_path=db_path, schema_path=schema_path)
 
-        workspaces = list_workspaces()
-        assert len(workspaces) >= 2, "Should have at least 2 workspaces"
-        names = {ws["name"] for ws in workspaces}
-        assert "Workspace 1" in names
-        assert "Workspace 2" in names
+            with mock.patch.dict(os.environ, {"DB_PATH": str(db_path)}):
+                create_workspace(name="Workspace 1")
+                create_workspace(name="Workspace 2")
+
+                workspaces = list_workspaces()
+                assert len(workspaces) >= 2, "Should have at least 2 workspaces"
+                names = {ws["name"] for ws in workspaces}
+                assert "Workspace 1" in names
+                assert "Workspace 2" in names
 
 
 class TestRuleHelpers:
     """Test cursor rule management."""
 
-    @pytest.fixture
-    def temp_db_with_workspace(self):
-        """Create a database with a workspace for testing."""
+    def test_add_and_get_rules(self):
+        """Test adding and retrieving rules."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             schema_path = Path(__file__).parent.parent / "schema.sql"
             init_database(db_path=db_path, schema_path=schema_path)
 
-            original_db_path = os.environ.get("DB_PATH")
-            os.environ["DB_PATH"] = str(db_path)
+            with mock.patch.dict(os.environ, {"DB_PATH": str(db_path)}):
+                workspace_id = create_workspace(name="Test")
 
-            workspace_id = create_workspace(name="Test")
+                rule_id = add_rule(
+                    workspace_id=workspace_id,
+                    rule_name="test_rule",
+                    content="Test rule content",
+                    description="A test rule",
+                )
 
-            yield db_path, workspace_id
+                assert rule_id is not None
 
-            if original_db_path:
-                os.environ["DB_PATH"] = original_db_path
-            else:
-                os.environ.pop("DB_PATH", None)
-
-    def test_add_and_get_rules(self, temp_db_with_workspace):
-        """Test adding and retrieving rules."""
-        _, workspace_id = temp_db_with_workspace
-
-        rule_id = add_rule(
-            workspace_id=workspace_id,
-            rule_name="test_rule",
-            content="Test rule content",
-            description="A test rule",
-        )
-
-        assert rule_id is not None
-
-        rules = get_rules(workspace_id)
-        assert len(rules) >= 1
-        rule_names = {rule["rule_name"] for rule in rules}
-        assert "test_rule" in rule_names
+                rules = get_rules(workspace_id)
+                assert len(rules) >= 1
+                rule_names = {rule["rule_name"] for rule in rules}
+                assert "test_rule" in rule_names
 
 
 class TestIntegrationHelpers:
     """Test integration management."""
 
-    @pytest.fixture
-    def temp_db_with_workspace(self):
-        """Create a database with a workspace for testing."""
+    def test_add_and_get_integrations(self):
+        """Test adding and retrieving integrations."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             schema_path = Path(__file__).parent.parent / "schema.sql"
             init_database(db_path=db_path, schema_path=schema_path)
 
-            original_db_path = os.environ.get("DB_PATH")
-            os.environ["DB_PATH"] = str(db_path)
+            with mock.patch.dict(os.environ, {"DB_PATH": str(db_path)}):
+                workspace_id = create_workspace(name="Test")
 
-            workspace_id = create_workspace(name="Test")
+                integration_id = add_integration(
+                    workspace_id=workspace_id,
+                    integration_type="test",
+                    name="Test Integration",
+                    config_json='{"key": "value"}',
+                    api_key_env_var="TEST_API_KEY",
+                )
 
-            yield db_path, workspace_id
+                assert integration_id is not None
 
-            if original_db_path:
-                os.environ["DB_PATH"] = original_db_path
-            else:
-                os.environ.pop("DB_PATH", None)
-
-    def test_add_and_get_integrations(self, temp_db_with_workspace):
-        """Test adding and retrieving integrations."""
-        _, workspace_id = temp_db_with_workspace
-
-        integration_id = add_integration(
-            workspace_id=workspace_id,
-            integration_type="test",
-            name="Test Integration",
-            config_json='{"key": "value"}',
-            api_key_env_var="TEST_API_KEY",
-        )
-
-        assert integration_id is not None
-
-        integrations = get_integrations(workspace_id)
-        assert len(integrations) >= 1
-        names = {integ["name"] for integ in integrations}
-        assert "Test Integration" in names
+                integrations = get_integrations(workspace_id)
+                assert len(integrations) >= 1
+                names = {integ["name"] for integ in integrations}
+                assert "Test Integration" in names
 
 
 class TestPreferenceHelpers:
     """Test preference management."""
 
-    @pytest.fixture
-    def temp_db(self):
-        """Create a temporary database for testing."""
+    def test_set_and_get_preference(self):
+        """Test setting and retrieving preferences."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
             schema_path = Path(__file__).parent.parent / "schema.sql"
             init_database(db_path=db_path, schema_path=schema_path)
 
-            original_db_path = os.environ.get("DB_PATH")
-            os.environ["DB_PATH"] = str(db_path)
+            with mock.patch.dict(os.environ, {"DB_PATH": str(db_path)}):
+                set_preference("test_key", "test_value", "A test preference")
 
-            yield db_path
+                value = get_preference("test_key")
+                assert value == "test_value"
 
-            if original_db_path:
-                os.environ["DB_PATH"] = original_db_path
-            else:
-                os.environ.pop("DB_PATH", None)
-
-    def test_set_and_get_preference(self, temp_db):
-        """Test setting and retrieving preferences."""
-        set_preference("test_key", "test_value", "A test preference")
-
-        value = get_preference("test_key")
-        assert value == "test_value"
-
-    def test_update_preference(self, temp_db):
+    def test_update_preference(self):
         """Test updating an existing preference."""
-        set_preference("update_key", "value1")
-        set_preference("update_key", "value2")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            schema_path = Path(__file__).parent.parent / "schema.sql"
+            init_database(db_path=db_path, schema_path=schema_path)
 
-        value = get_preference("update_key")
-        assert value == "value2"
+            with mock.patch.dict(os.environ, {"DB_PATH": str(db_path)}):
+                set_preference("update_key", "value1")
+                set_preference("update_key", "value2")
+
+                value = get_preference("update_key")
+                assert value == "value2"
 
 
 if __name__ == "__main__":
