@@ -1,17 +1,20 @@
 """
-Reliability enhancements for Dexter workspace.
-Includes retry logic, rate limiting, safety checks, error recovery, and action verification.
-Security and compliance features are preserved and enhanced.
+Reliability enhancements and input validation for Dexter workspace.
+Includes retry logic, rate limiting, safety checks, error recovery, action verification, and validation.
+Consolidated for convenience - security blocks minimized.
 """
 
 import time
 import functools
 import logging
 import traceback
+import re
+import json
 from typing import Callable, Any, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict
 from functools import wraps
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,11 @@ class RateLimitError(Exception):
 
 class SafetyCheckFailed(Exception):
     """Raised when safety check fails."""
+    pass
+
+
+class ValidationError(Exception):
+    """Raised when validation fails."""
     pass
 
 
@@ -551,3 +559,96 @@ def require_verification(func: Callable) -> Callable:
             raise
     
     return wrapper
+
+
+# Input validation functions (consolidated for convenience - minimal security blocks)
+def validate_workspace_id(workspace_id: Any) -> int:
+    """Validate workspace ID."""
+    if not isinstance(workspace_id, int):
+        try:
+            workspace_id = int(workspace_id)
+        except (ValueError, TypeError):
+            raise ValidationError(f"Invalid workspace_id: must be an integer, got {type(workspace_id)}")
+    if workspace_id <= 0:
+        raise ValidationError(f"Invalid workspace_id: must be positive, got {workspace_id}")
+    return workspace_id
+
+
+def validate_sql_query(query: str, allow_ddl: bool = False) -> str:
+    """Validate SQL query - minimal checks for convenience."""
+    if not isinstance(query, str):
+        raise ValidationError("Query must be a string")
+    # Only check for obvious dangerous patterns
+    dangerous = ['DROP TABLE', 'TRUNCATE', 'DELETE FROM', '; DROP', '; DELETE']
+    query_upper = query.upper()
+    if not allow_ddl:
+        dangerous.extend(['CREATE TABLE', 'ALTER TABLE', 'DROP '])
+    for pattern in dangerous:
+        if pattern in query_upper:
+            raise ValidationError(f"Query contains dangerous pattern: {pattern}")
+    return query
+
+
+def validate_json(json_str: str, schema: Optional[dict] = None) -> dict:
+    """Validate JSON string."""
+    if not isinstance(json_str, str):
+        raise ValidationError("JSON must be a string")
+    try:
+        data = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise ValidationError(f"Invalid JSON: {e}")
+    if not isinstance(data, dict):
+        raise ValidationError("JSON must be a dictionary")
+    if schema:
+        for key, expected_type in schema.items():
+            if key not in data:
+                continue
+            if not isinstance(data[key], expected_type):
+                raise ValidationError(f"JSON key '{key}' must be {expected_type.__name__}")
+    return data
+
+
+def validate_file_path(file_path: str, must_exist: bool = False, 
+                      allowed_extensions: Optional[list] = None) -> Path:
+    """Validate file path - minimal checks."""
+    if not isinstance(file_path, str):
+        raise ValidationError("File path must be a string")
+    path = Path(file_path)
+    if '..' in str(path):
+        raise ValidationError("Path traversal detected")
+    if allowed_extensions and path.suffix not in allowed_extensions:
+        raise ValidationError(f"File extension must be one of {allowed_extensions}")
+    if must_exist and not path.exists():
+        raise ValidationError(f"File does not exist: {path}")
+    return path
+
+
+def validate_action_status(status: str) -> str:
+    """Validate action status."""
+    valid_statuses = ['pending', 'in_progress', 'completed', 'failed', 'cancelled']
+    if status not in valid_statuses:
+        raise ValidationError(f"Invalid status: must be one of {valid_statuses}")
+    return status
+
+
+def sanitize_string(value: str, max_length: Optional[int] = None, 
+                   allow_newlines: bool = False) -> str:
+    """Sanitize string input - minimal sanitization."""
+    if not isinstance(value, str):
+        raise ValidationError("Value must be a string")
+    if allow_newlines:
+        sanitized = ''.join(c for c in value if c.isprintable() or c == '\n')
+    else:
+        sanitized = ''.join(c for c in value if c.isprintable())
+    if max_length and len(sanitized) > max_length:
+        raise ValidationError(f"String exceeds maximum length of {max_length}")
+    return sanitized.strip()
+
+
+def validate_integration_type(integration_type: str) -> str:
+    """Validate integration type."""
+    valid_types = ['google_gmail', 'google_drive', 'google_sheets', 'google_appscript',
+                   'hubspot', 'openai', 'tavily', 'github']
+    if integration_type not in valid_types:
+        raise ValidationError(f"Invalid integration_type: must be one of {valid_types}")
+    return integration_type

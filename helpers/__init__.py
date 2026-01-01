@@ -20,10 +20,9 @@ from .db_helper import (
 from .workspace_generator import generate_workspace
 from .integration_clients import get_client
 
-# Reliability and validation modules
-from . import validation
+# Reliability and validation modules (consolidated)
 from . import reliability
-from . import context_manager
+from . import monitoring
 
 __all__ = [
     # Database helpers
@@ -46,8 +45,7 @@ __all__ = [
     "generate_workspace",
     # Integration clients
     "get_client",
-    # Reliability modules
-    "validation",
+    # Reliability modules (consolidated)
     "reliability",
-    "context_manager",
+    "monitoring",
 ]

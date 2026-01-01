@@ -3,11 +3,12 @@ Examples of using reliability features in Dexter workspace.
 This file demonstrates best practices for AI reliability.
 """
 
-from helpers.validation import (
+from helpers.reliability import (
     validate_workspace_id,
     validate_sql_query,
     validate_json,
     sanitize_string,
+    ValidationError,
 )
 from helpers.reliability import (
     retry_with_backoff,
@@ -18,7 +19,7 @@ from helpers.reliability import (
 )
 from helpers.reliability import require_verification, ActionVerifier
 from helpers.reliability import recover_from_error, RecoveryStrategy, log_error_with_context
-from helpers.context_manager import cleanup_expired_contexts, set_context_with_ttl
+from helpers.monitoring import cleanup_expired_contexts, set_context_with_ttl
 
 
 # Example 1: Validated database operation
@@ -89,7 +90,7 @@ def maintenance_cleanup():
     print(f"Cleaned up {expired_count} expired contexts")
     
     # Clean old actions (older than 30 days)
-    from helpers.context_manager import cleanup_old_actions
+    from helpers.monitoring import cleanup_old_actions
     old_actions_count = cleanup_old_actions(days=30)
     print(f"Cleaned up {old_actions_count} old actions")
 
