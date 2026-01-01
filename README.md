@@ -26,10 +26,11 @@ Agent Request → db_helper.py → SQLite (dexter.db)
 
 **Guardrails in Practice**:
 - DB writes go through `helpers/db_helper.py` only
-- External API calls route through `helpers/integration_clients.py`
+- External API calls route through `helpers/utils.py` (get_client)
 - Destructive operations require explicit confirmation
 - All actions logged with timestamp, user, and change details
 - Agent scope limited to workspace boundaries
+- Rules stored in database, synced to `.cursor/rules/` for Cursor IDE
 
 ## Repository Structure
 
@@ -47,7 +48,11 @@ dexter-workspace/
 ├── helpers/              # Core control layer
 │   ├── db_helper.py               # DB access + guardrails
 │   ├── reliability.py             # Error handling, validation, decorators
-│   └── utils.py                   # Health checks, integrations, workspace gen
+│   ├── utils.py                   # Health checks, integrations, workspace gen
+│   ├── agent_brain.py             # Database-backed agent intelligence
+│   ├── rule_loader.py             # Load rules from database
+│   ├── rule_migration.py          # Migrate rules to database
+│   └── rule_sync.py               # Sync rules between DB and files
 ├── schema.sql            # Consolidated database schema (source of truth)
 ├── dexter.db             # Runtime SQLite database (ephemeral in dev)
 ├── .env.template         # Configuration template

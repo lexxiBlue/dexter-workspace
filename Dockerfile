@@ -22,8 +22,8 @@ COPY schema.sql ./
 COPY helpers/ ./helpers/
 COPY domains/ ./domains/
 
-# Initialize database
-RUN sqlite3 dexter.db < schema.sql
+# Initialize database schema (database file should be volume-mounted in production)
+RUN sqlite3 dexter.db < schema.sql || echo "Note: Database will be initialized at runtime if volume-mounted"
 
 # Set environment variables
 ENV PYTHONPATH=/workspace
