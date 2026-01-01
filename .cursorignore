@@ -4,31 +4,56 @@ vendor/
 .venv/
 venv/
 __pycache__/
+*.egg-info/
 
-# Build outputs
+# Build outputs & caches
 dist/
 build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
 *.log
 *.pyc
+*.pyo
+*.pyd
 
 # Secrets and environment
 .env
 .env.*
 *.key
 secrets/
+.aws/
+.kube/
 
 # Large files
 *.mp4
 *.zip
 *.tar.gz
+*.tar
 data/
+*.db
+*.sqlite
+.cache/
 
 # IDE and system
 .idea/
+.vscode/
 *.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
+.~
 
-# Database files
-*.db
-*.sqlite
+# Git & version control
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Package managers
+package-lock.json
+pip.lock
+poetry.lock
+Gemfile.lock
