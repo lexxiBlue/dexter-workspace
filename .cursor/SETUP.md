@@ -4,6 +4,20 @@
 
 ---
 
+## Schema Layers: Understanding the Database
+
+**Important**: Dexter uses two main schema files, each with a different purpose:
+
+| File | Purpose | Tables |
+|------|---------|--------|
+| `dexter.sql` | **Control-plane**: Audit, rules, and domain registry | `action_log`, `rules`, `context`, `domains`, `checkpoints` |
+| `schema.sql` | **Workspace/Config**: Workspace settings and integrations | `workspaces`, `cursor_rules`, `integrations`, `templates`, `preferences`, `mcp_servers` |
+| **Domain tables** (planned) | **Business entities**: Orders, customers, equipment | See `.cursor/rules/dexter-context.md`; must be added to `schema.sql` |
+
+**When writing SQL**: Check which table you need. If it's not in `dexter.sql` or `schema.sql`, it doesn't exist yet—ask before assuming it's there.
+
+---
+
 ## Installation Checklist
 
 ### 1. Install Cursor IDE
@@ -48,8 +62,9 @@ ls .cursor/
 # Output should show: commands.md rules/
 
 # Test DB schema
-sqlite3 dexter.db ".schema orders"
-# Output should show: id, customer_id, total_price, status, etc.
+sqlite3 dexter.db ".schema"
+# Output should show: action_log, rules, context, domains, checkpoints (from dexter.sql)
+# Plus: workspaces, cursor_rules, integrations, etc. (from schema.sql)
 ```
 
 ---
@@ -267,12 +282,13 @@ Then /Handoff
 4. Commit early + often
 
 ### "No such column: X"
-**Cause**: LM hallucinated a column
+**Cause**: LM hallucinated a column or referred to a planned table that doesn't exist yet
 **Fix**:
 1. Paste schema: `SELECT sql FROM sqlite_master WHERE type='table' AND name='orders';`
-2. Show LM exact columns
-3. Ask LM to re-write query
-4. Test in SQLite REPL before accepting
+2. Show LM exact columns (or confirm table doesn't exist)
+3. If table is missing, check `.cursor/rules/dexter-context.md` and add it to `schema.sql` if needed
+4. Ask LM to re-write query or implement the table first
+5. Test in SQLite REPL before accepting
 
 ### "Type mismatch in import"
 **Cause**: LM modified function signature but forgot related files
@@ -314,7 +330,7 @@ Then /Handoff
 
 **Dexter domain questions?**
 - Check `.cursor/rules/dexter-context.md`
-- Reference `dexter.sql` for schema
+- Reference `dexter.sql` + `schema.sql` for schema
 - See `domain/` and `helpers/` for implementation patterns
 
 ---
