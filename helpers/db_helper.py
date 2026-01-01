@@ -3,18 +3,27 @@ Dexter Database Helper
 SQLite database operations for workspace configuration management.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 from typing import Optional
 from contextlib import contextmanager
 
 
-DB_PATH = Path(__file__).parent.parent / "dexter.db"
+def get_db_path() -> Path:
+    """Get database path from environment or use default."""
+    db_path_str = os.getenv("DB_PATH")
+    if db_path_str:
+        return Path(db_path_str)
+    return Path(__file__).parent.parent / "dexter.db"
 
 
 @contextmanager
-def get_connection(db_path: Path = DB_PATH):
+def get_connection(db_path: Optional[Path] = None):
     """Get database connection with automatic cleanup."""
+    if db_path is None:
+        db_path = get_db_path()
+    
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     try:
@@ -27,8 +36,11 @@ def get_connection(db_path: Path = DB_PATH):
         conn.close()
 
 
-def init_database(db_path: Path = DB_PATH, schema_path: Optional[Path] = None):
+def init_database(db_path: Optional[Path] = None, schema_path: Optional[Path] = None):
     """Initialize database with schema."""
+    if db_path is None:
+        db_path = get_db_path()
+    
     if schema_path is None:
         schema_path = Path(__file__).parent.parent / "schema.sql"
     
