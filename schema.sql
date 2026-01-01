@@ -299,3 +299,98 @@ CREATE INDEX IF NOT EXISTS idx_patterns_workspace ON agent_patterns(workspace_id
 CREATE INDEX IF NOT EXISTS idx_patterns_type ON agent_patterns(pattern_type);
 CREATE INDEX IF NOT EXISTS idx_state_workspace ON agent_state(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_state_key ON agent_state(state_key);
+
+-- ============================================================================
+-- VIEWS FOR COMMON QUERIES
+-- ============================================================================
+
+-- Active rules view
+CREATE VIEW IF NOT EXISTS view_active_rules AS
+SELECT * FROM cursor_rules WHERE is_active = 1;
+
+-- Active global rules view
+CREATE VIEW IF NOT EXISTS view_active_global_rules AS
+SELECT * FROM rules WHERE is_active = 1 ORDER BY priority;
+
+-- Recent decisions view (last 7 days)
+CREATE VIEW IF NOT EXISTS view_recent_decisions AS
+SELECT * FROM agent_decisions 
+WHERE created_at > datetime('now', '-7 days')
+ORDER BY created_at DESC;
+
+-- Successful decisions view
+CREATE VIEW IF NOT EXISTS view_successful_decisions AS
+SELECT * FROM agent_decisions 
+WHERE success = 1
+ORDER BY created_at DESC;
+
+-- Active integrations view
+CREATE VIEW IF NOT EXISTS view_active_integrations AS
+SELECT * FROM integrations WHERE is_active = 1;
+
+-- System statistics view
+CREATE VIEW IF NOT EXISTS view_system_stats AS
+SELECT 
+    (SELECT COUNT(*) FROM workspaces) as workspace_count,
+    (SELECT COUNT(*) FROM action_log) as action_total,
+    (SELECT COUNT(*) FROM action_log WHERE status = 'completed') as action_completed,
+    (SELECT COUNT(*) FROM action_log WHERE status = 'failed') as action_failed,
+    (SELECT COUNT(*) FROM action_log WHERE status = 'pending') as action_pending,
+    (SELECT COUNT(*) FROM context) as context_entries,
+    (SELECT COUNT(*) FROM agent_knowledge) as knowledge_count,
+    (SELECT COUNT(*) FROM agent_decisions) as decision_count,
+    (SELECT COUNT(*) FROM agent_patterns) as pattern_count,
+    (SELECT COUNT(*) FROM integrations WHERE is_active = 1) as active_integrations;
+
+-- Agent intelligence summary view (per workspace + global)
+CREATE VIEW IF NOT EXISTS view_agent_intelligence AS
+SELECT 
+    w.id as workspace_id,
+    (SELECT COUNT(*) FROM agent_knowledge WHERE agent_knowledge.workspace_id = w.id) as knowledge_count,
+    (SELECT COUNT(*) FROM agent_decisions WHERE agent_decisions.workspace_id = w.id) as decision_count,
+    (SELECT COUNT(*) FROM agent_patterns WHERE agent_patterns.workspace_id = w.id) as pattern_count,
+    (SELECT COUNT(*) FROM agent_state WHERE agent_state.workspace_id = w.id) as state_count
+FROM workspaces w
+UNION ALL
+SELECT 
+    NULL as workspace_id,
+    (SELECT COUNT(*) FROM agent_knowledge WHERE workspace_id IS NULL) as knowledge_count,
+    (SELECT COUNT(*) FROM agent_decisions WHERE workspace_id IS NULL) as decision_count,
+    (SELECT COUNT(*) FROM agent_patterns WHERE workspace_id IS NULL) as pattern_count,
+    (SELECT COUNT(*) FROM agent_state WHERE workspace_id IS NULL) as state_count;
+
+-- Expired context view (for cleanup)
+CREATE VIEW IF NOT EXISTS view_expired_context AS
+SELECT * FROM context 
+WHERE expires_at IS NOT NULL 
+AND expires_at < datetime('now');
+
+-- Old completed actions view (for cleanup)
+CREATE VIEW IF NOT EXISTS view_old_completed_actions AS
+SELECT * FROM action_log 
+WHERE status = 'completed' 
+AND timestamp < datetime('now', '-30 days');
+
+-- High confidence knowledge view
+CREATE VIEW IF NOT EXISTS view_high_confidence_knowledge AS
+SELECT * FROM agent_knowledge 
+WHERE confidence >= 0.8
+ORDER BY confidence DESC, usage_count DESC;
+
+-- Successful patterns view
+CREATE VIEW IF NOT EXISTS view_successful_patterns AS
+SELECT * FROM agent_patterns 
+WHERE success_rate >= 0.7
+ORDER BY success_rate DESC, usage_count DESC;
+
+-- ============================================================================
+-- CLEANUP SCRIPTS (for maintenance)
+-- ============================================================================
+
+-- Cleanup expired context entries
+-- Usage: DELETE FROM context WHERE id IN (SELECT id FROM view_expired_context);
+
+-- Cleanup old completed actions (older than 30 days)
+-- Usage: DELETE FROM action_log WHERE id IN (SELECT id FROM view_old_completed_actions);
+
+-- Note: Actual cleanup execution remains in Python for error handling and logging
