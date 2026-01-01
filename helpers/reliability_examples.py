@@ -19,7 +19,7 @@ from helpers.reliability import (
 )
 from helpers.reliability import require_verification, ActionVerifier
 from helpers.reliability import recover_from_error, RecoveryStrategy, log_error_with_context
-from helpers.monitoring import cleanup_expired_contexts, set_context_with_ttl
+from helpers.utils import cleanup_expired_contexts, set_context_with_ttl
 
 
 # Example 1: Validated database operation
@@ -98,7 +98,7 @@ def maintenance_cleanup():
 # Example 6: Health monitoring
 def check_system_health():
     """Example health check."""
-    from helpers.monitoring import health_check, get_system_stats
+    from helpers.utils import health_check, get_system_stats
     
     health = health_check()
     stats = get_system_stats()
