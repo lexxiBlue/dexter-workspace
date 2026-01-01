@@ -21,15 +21,13 @@ def temp_db():
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = Path(f.name)
     
-    # Initialize database with schemas
+    # Initialize database with consolidated schema
     workspace_root = Path(__file__).parent.parent
-    dexter_sql = workspace_root / "dexter.sql"
     schema_sql = workspace_root / "schema.sql"
     
     init_database(
         db_path=db_path,
-        dexter_sql_path=dexter_sql if dexter_sql.exists() else None,
-        schema_sql_path=schema_sql if schema_sql.exists() else None
+        schema_path=schema_sql if schema_sql.exists() else None
     )
     
     yield db_path

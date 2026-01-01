@@ -17,7 +17,7 @@ When you type `/Handoff` in Cursor chat while inside this workspace, the agent w
 
 2. **Initialize Dexter Workspace**
    - Ensure `.env` exists (clone from `.env.template` if missing)
-   - Ensure `dexter.db` exists and is initialized from `dexter.sql` + `schema.sql`
+   - Ensure `dexter.db` exists and is initialized from `schema.sql`
 
 3. **Summarize Changes for You**
    - Show a short summary of new commits since your last local state
@@ -26,7 +26,7 @@ When you type `/Handoff` in Cursor chat while inside this workspace, the agent w
 4. **Prepare Agent Context**
    - Load key files into context:
      - `README.md`
-     - `dexter.sql` and `schema.sql`
+     - `schema.sql`
      - `helpers/db_helper.py`
      - `helpers/integration_clients.py`
      - `.cursormcp-servers.json`
@@ -62,10 +62,7 @@ Cursor agent should follow this protocol when `/Handoff` is invoked:
 
    # Ensure database exists
    if [ ! -f dexter.db ]; then
-     sqlite3 dexter.db < dexter.sql
-     if [ -f schema.sql ]; then
-       sqlite3 dexter.db < schema.sql
-     fi
+     sqlite3 dexter.db < schema.sql
    fi
    ```
 
@@ -88,7 +85,6 @@ Cursor agent should follow this protocol when `/Handoff` is invoked:
    After sync, agent should:
    - Open the following files in the editor or load them into context:
      - `README.md`
-     - `dexter.sql`
      - `schema.sql`
      - `helpers/db_helper.py`
      - `helpers/integration_clients.py`
@@ -102,7 +98,7 @@ Cursor agent should follow this protocol when `/Handoff` is invoked:
 
 On first chat message in this workspace (even without `/Handoff`), the agent should:
 
-1. Detect if this is the `dexter-workspace` repo (presence of `dexter.sql` and `helpers/db_helper.py`).
+1. Detect if this is the `dexter-workspace` repo (presence of `schema.sql` and `helpers/db_helper.py`).
 2. Gently suggest running `/Handoff` if:
    - `git status` shows behind `origin/main`, or
    - `dexter.db` is missing, or

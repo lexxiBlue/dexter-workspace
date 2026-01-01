@@ -65,28 +65,21 @@ def get_connection(db_path: Path = DB_PATH, retry_count: int = 3):
 
 
 def init_database(db_path: Path = DB_PATH, 
-                  dexter_sql_path: Optional[Path] = None,
-                  schema_sql_path: Optional[Path] = None) -> None:
-    """Initialize database with schema files.
-    
-    Loads schema.sql first (creates workspaces table), then dexter.sql 
-    (runtime tables that reference workspaces).
+                  schema_path: Optional[Path] = None) -> None:
+    """Initialize database with consolidated schema file.
     
     Args:
         db_path: Path to SQLite database file
-        dexter_sql_path: Path to dexter.sql file (defaults to workspace root)
-        schema_sql_path: Path to schema.sql file (defaults to workspace root)
+        schema_path: Path to schema.sql file (defaults to workspace root)
         
     Raises:
-        FileNotFoundError: If schema files don't exist
+        FileNotFoundError: If schema file doesn't exist
         sqlite3.Error: If schema execution fails
     """
     workspace_root = Path(__file__).parent.parent
     
-    if schema_sql_path is None:
-        schema_sql_path = workspace_root / "schema.sql"
-    if dexter_sql_path is None:
-        dexter_sql_path = workspace_root / "dexter.sql"
+    if schema_path is None:
+        schema_path = workspace_root / "schema.sql"
     
     # Ensure database directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,24 +89,16 @@ def init_database(db_path: Path = DB_PATH,
         logger.warning(f"Removing existing database at {db_path}")
         db_path.unlink()
     
-    # Load schema.sql first (creates workspaces table)
-    if not schema_sql_path.exists():
-        raise FileNotFoundError(f"Schema file not found: {schema_sql_path}")
+    # Load consolidated schema.sql
+    if not schema_path.exists():
+        raise FileNotFoundError(f"Schema file not found: {schema_path}")
     
-    with open(schema_sql_path, "r", encoding="utf-8") as f:
+    with open(schema_path, "r", encoding="utf-8") as f:
         schema_sql = f.read()
     
-    # Load dexter.sql (runtime tables that reference workspaces)
-    if not dexter_sql_path.exists():
-        raise FileNotFoundError(f"Core schema file not found: {dexter_sql_path}")
-    
-    with open(dexter_sql_path, "r", encoding="utf-8") as f:
-        dexter_schema = f.read()
-    
-    # Execute schemas in correct order: schema.sql first, then dexter.sql
+    # Execute schema
     with get_connection(db_path) as conn:
         conn.executescript(schema_sql)
-        conn.executescript(dexter_schema)
     
     logger.info(f"Database initialized at {db_path}")
     print(f"Database initialized at {db_path}")
@@ -393,4 +378,4 @@ if __name__ == "__main__":
         print("Database helper ready")
     else:
         print("Usage: python db_helper.py init")
-        print("This will initialize the database from schema.sql and dexter.sql")
+        print("This will initialize the database from schema.sql")

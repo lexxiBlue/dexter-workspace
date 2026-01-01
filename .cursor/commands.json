@@ -10,7 +10,7 @@
         "",
         "Before doing any work in this session, you MUST:",
         "1. Inspect the repository root to understand the layout.",
-        "2. Load the database schema from dexter.sql and schema.sql if present.",
+        "2. Load the database schema from schema.sql if present.",
         "3. Read .cursor/rules/core.mdc, .cursor/rules/database.mdc, and .cursor/rules/dexter.mdc (and related rule files) and treat them as hard constraints.",
         "4. Inspect helpers/db_helper.py, helpers/integration_clients.py, and helpers/workspace_generator.py to understand the core helper contracts.",
         "",

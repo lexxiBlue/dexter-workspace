@@ -214,7 +214,7 @@ Agent will:
 ```
 Run manually:
 rm dexter.db
-sqlite3 dexter.db < dexter.sql
+sqlite3 dexter.db < schema.sql
 
 Then /Handoff
 ```
@@ -225,7 +225,7 @@ Then /Handoff
 2. Create new chat (clear context window)
 3. Paste:
    - Relevant file snippet (5-10 lines)
-   - Schema context (dexter.sql snippet)
+   - Schema context (schema.sql snippet)
    - Domain rule (from .cursor/rules/dexter-context.md)
    - Your specific request
 4. Ask LM explicitly to avoid the mistake
@@ -314,7 +314,7 @@ Then /Handoff
 
 **Dexter domain questions?**
 - Check `.cursor/rules/dexter-context.md`
-- Reference `dexter.sql` for schema
+- Reference `schema.sql` for schema
 - See `domain/` and `helpers/` for implementation patterns
 
 ---

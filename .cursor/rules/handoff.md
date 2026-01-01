@@ -5,7 +5,7 @@ These rules shape how the Cursor agent behaves in this repository, including the
 ## Repo Identity
 
 - This is the **Dexter Workspace** repo.
-- Single source of truth: `dexter.sql` + `schema.sql`.
+- Single source of truth: `schema.sql`.
 - Runtime DB: `dexter.db` (ephemeral in dev, guarded in prod).
 
 ## Global Behavior
@@ -45,7 +45,7 @@ When the user types `/Handoff`:
 ## Database Operations
 
 - Allowed autonomously:
-  - Creating `dexter.db` if missing using `dexter.sql` + `schema.sql`.
+  - Creating `dexter.db` if missing using `schema.sql`.
   - Running read-only queries for analysis and reporting.
 - Requires explicit confirmation:
   - Dropping tables, truncating data, or recreating `dexter.db`.

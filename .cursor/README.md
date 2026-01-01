@@ -122,7 +122,7 @@ Enables Cursor agent to:
 **Key settings:**
 ```json
 {
-  "pinnedFiles": ["dexter.sql", "schema.sql", "helpers/"],
+  "pinnedFiles": ["schema.sql", "helpers/"],
   "longContextCaching": true,  // Saves token cost
   "autoCommit": false,          // Never auto-commit
   "prDriven": true,             // All changes via PR
@@ -145,7 +145,7 @@ Enables Cursor agent to:
 2. Type /Handoff
    ⮕ Agent pulls latest main
    ⮕ Initializes .env + dexter.db
-   ⮕ Pins dexter.sql + schema.sql + helpers/ (context)
+   ⮕ Pins schema.sql + helpers/ (context)
    ⮕ Shows recent commits + changed files
    ⮕ "Ready for your next task"
 
@@ -197,8 +197,7 @@ Result: LM respects all four rule sets
 When you run `/Handoff`, these files are pinned (always available to LM):
 
 ```
-✅ dexter.sql              (20k tokens) ← Schema + seed data
-✅ schema.sql             (5k tokens)  ← Schema only
+✅ schema.sql             (25k tokens) ← Consolidated schema + seed data
 ✅ helpers/db_helper.py   (3k tokens)  ← DB query patterns
 ✅ helpers/integration_clients.py (5k tokens) ← API client patterns
 ✅ .cursor/commands.md    (2k tokens)  ← Custom commands

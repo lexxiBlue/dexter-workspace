@@ -261,7 +261,7 @@ Runs `ruff check . && mypy --strict helpers/ domain/`
 Tests all integration clients (HubSpot, Shopify).
 
 ### `/db-reset`
-(Dangerous!) Recreates `dexter.db` from `dexter.sql` scratch. Requires confirmation.
+(Dangerous!) Recreates `dexter.db` from `schema.sql` scratch. Requires confirmation.
 
 ---
 

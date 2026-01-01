@@ -4,7 +4,7 @@
 Dexter is an AI-first Cursor IDE workspace. Single database as source of truth, autonomous operation with guardrails.
 
 ## Structure
-- `dexter.sql` - Database schema (rules, action log, context, domains)
+- `schema.sql` - Database schema (all tables: workspace config + runtime)
 - `.cursor/rules/dexter.mdc` - AI operating protocol
 - `domains/` - Organized work areas (hubspot, google, automation, projects)
 

@@ -70,11 +70,8 @@ jobs:
       
       - name: Validate SQL schema
         run: |
-          # Create test database from schema files
-          sqlite3 test.db < dexter.sql
-          if [ -f schema.sql ]; then
-            sqlite3 test.db < schema.sql
-          fi
+          # Create test database from consolidated schema
+          sqlite3 test.db < schema.sql
           # Verify tables were created
           echo "Tables created:"
           sqlite3 test.db "SELECT name FROM sqlite_master WHERE type='table';"

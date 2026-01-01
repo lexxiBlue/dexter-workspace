@@ -13,8 +13,7 @@
   /domain/            → Business logic (customers, orders, integrations)
   /api/               → HTTP endpoints (Flask/FastAPI)
   /tests/             → Unit + integration tests
-  dexter.sql          → Schema + seed data
-  schema.sql          → Schema definitions only
+  schema.sql          → Consolidated schema + seed data (single source of truth)
   requirements.txt    → Pinned versions (poetry.lock preferred)
 ```
 
@@ -89,9 +88,9 @@
 ## Database Rules
 
 ### Schema Management
-1. **All tables in `dexter.sql`** (single source of truth)
-2. **No direct `CREATE TABLE` in migration files** (modify `dexter.sql` instead)
-3. **Seed data** in `dexter.sql` after schema definition
+1. **All tables in `schema.sql`** (single source of truth)
+2. **No direct `CREATE TABLE` in migration files** (modify `schema.sql` instead)
+3. **Seed data** in `schema.sql` after schema definition
 4. **Foreign keys enabled** at connection time:
    ```python
    conn.execute("PRAGMA foreign_keys = ON")
