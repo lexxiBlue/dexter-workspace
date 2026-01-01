@@ -17,7 +17,7 @@ from helpers.reliability import (
     _db_write_limiter,
 )
 from helpers.action_verifier import require_verification, ActionVerifier
-from helpers.error_recovery import recover_from_error, RecoveryStrategy, log_error_with_context
+from helpers.reliability import recover_from_error, RecoveryStrategy, log_error_with_context
 from helpers.context_manager import cleanup_expired_contexts, set_context_with_ttl
 
 

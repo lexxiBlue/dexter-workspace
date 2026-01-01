@@ -25,7 +25,6 @@ from . import validation
 from . import reliability
 from . import action_verifier
 from . import context_manager
-from . import error_recovery
 
 __all__ = [
     # Database helpers
@@ -53,5 +52,4 @@ __all__ = [
     "reliability",
     "action_verifier",
     "context_manager",
-    "error_recovery",
 ]
