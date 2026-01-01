@@ -49,7 +49,8 @@ def init_database(db_path: Path = DB_PATH,
                   schema_sql_path: Optional[Path] = None) -> None:
     """Initialize database with schema files.
     
-    Loads dexter.sql first (core schema), then schema.sql (additional definitions).
+    Loads schema.sql first (creates workspaces table), then dexter.sql 
+    (runtime tables that reference workspaces).
     
     Args:
         db_path: Path to SQLite database file
@@ -62,10 +63,10 @@ def init_database(db_path: Path = DB_PATH,
     """
     workspace_root = Path(__file__).parent.parent
     
-    if dexter_sql_path is None:
-        dexter_sql_path = workspace_root / "dexter.sql"
     if schema_sql_path is None:
         schema_sql_path = workspace_root / "schema.sql"
+    if dexter_sql_path is None:
+        dexter_sql_path = workspace_root / "dexter.sql"
     
     # Ensure database directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,24 +76,24 @@ def init_database(db_path: Path = DB_PATH,
         logger.warning(f"Removing existing database at {db_path}")
         db_path.unlink()
     
-    # Load dexter.sql (core schema)
+    # Load schema.sql first (creates workspaces table)
+    if not schema_sql_path.exists():
+        raise FileNotFoundError(f"Schema file not found: {schema_sql_path}")
+    
+    with open(schema_sql_path, "r", encoding="utf-8") as f:
+        schema_sql = f.read()
+    
+    # Load dexter.sql (runtime tables that reference workspaces)
     if not dexter_sql_path.exists():
         raise FileNotFoundError(f"Core schema file not found: {dexter_sql_path}")
     
     with open(dexter_sql_path, "r", encoding="utf-8") as f:
         dexter_schema = f.read()
     
-    # Load schema.sql (additional definitions) if it exists
-    schema_sql = ""
-    if schema_sql_path.exists():
-        with open(schema_sql_path, "r", encoding="utf-8") as f:
-            schema_sql = f.read()
-    
-    # Execute schemas
+    # Execute schemas in correct order: schema.sql first, then dexter.sql
     with get_connection(db_path) as conn:
+        conn.executescript(schema_sql)
         conn.executescript(dexter_schema)
-        if schema_sql:
-            conn.executescript(schema_sql)
     
     logger.info(f"Database initialized at {db_path}")
     print(f"Database initialized at {db_path}")
@@ -290,6 +291,78 @@ def list_templates() -> list[dict[str, Any]]:
         return [dict(row) for row in cursor.fetchall()]
 
 
+def log_action(workspace_id: Optional[int], action_type: str, target: Optional[str] = None,
+               description: Optional[str] = None, status: str = "completed") -> int:
+    """Log an action to the action_log table.
+    
+    Args:
+        workspace_id: ID of the workspace (optional)
+        action_type: Type of action performed
+        target: Target of the action (optional)
+        description: Description of the action (optional)
+        status: Status of the action (default: "completed")
+        
+    Returns:
+        int: ID of the logged action
+    """
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO action_log (workspace_id, action_type, target, description, status)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (workspace_id, action_type, target, description, status)
+        )
+        return cursor.lastrowid
+
+
+def get_context(workspace_id: Optional[int], key: str) -> Optional[str]:
+    """Get context value for a workspace and key.
+    
+    Args:
+        workspace_id: ID of the workspace (optional)
+        key: Context key
+        
+    Returns:
+        str: Context value, or None if not found or expired
+    """
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            SELECT value FROM context 
+            WHERE workspace_id = ? AND key = ? 
+            AND (expires_at IS NULL OR expires_at > datetime('now'))
+            """,
+            (workspace_id, key)
+        )
+        row = cursor.fetchone()
+        return row["value"] if row else None
+
+
+def set_context(workspace_id: Optional[int], key: str, value: str, 
+                expires_at: Optional[str] = None) -> None:
+    """Set context value for a workspace and key.
+    
+    Args:
+        workspace_id: ID of the workspace (optional)
+        key: Context key
+        value: Context value
+        expires_at: Optional expiration timestamp (ISO format)
+    """
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO context (workspace_id, key, value, expires_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(workspace_id, key) DO UPDATE SET
+                value = excluded.value,
+                expires_at = excluded.expires_at,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (workspace_id, key, value, expires_at)
+        )
+
+
 if __name__ == "__main__":
     import sys
     
@@ -300,4 +373,4 @@ if __name__ == "__main__":
         print("Database helper ready")
     else:
         print("Usage: python db_helper.py init")
-        print("This will initialize the database from dexter.sql and schema.sql")
+        print("This will initialize the database from schema.sql and dexter.sql")

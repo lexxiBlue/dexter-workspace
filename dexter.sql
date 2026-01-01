@@ -4,12 +4,14 @@
 -- Action log - every operation Dexter performs
 CREATE TABLE IF NOT EXISTS action_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT DEFAULT (datetime('now')),
+    workspace_id INTEGER,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     action_type TEXT NOT NULL,
     target TEXT,
     description TEXT,
-    status TEXT DEFAULT 'completed',
-    rollback_info TEXT
+    status TEXT DEFAULT 'completed' CHECK (status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled')),
+    rollback_info TEXT,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE SET NULL
 );
 
 -- Rules - behavioral guardrails
@@ -26,30 +28,36 @@ CREATE TABLE IF NOT EXISTS rules (
 -- Context - working memory for current task
 CREATE TABLE IF NOT EXISTS context (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT NOT NULL UNIQUE,
+    workspace_id INTEGER,
+    key TEXT NOT NULL,
     value TEXT,
-    expires_at TEXT,
-    updated_at TEXT DEFAULT (datetime('now'))
+    expires_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    UNIQUE(workspace_id, key)
 );
 
 -- Domains - organized work areas
 CREATE TABLE IF NOT EXISTS domains (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
+    workspace_id INTEGER,
+    name TEXT NOT NULL,
     description TEXT,
     path TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    UNIQUE(workspace_id, name)
 );
 
 -- Checkpoints - verification points before destructive ops
 CREATE TABLE IF NOT EXISTS checkpoints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    action_id INTEGER,
-    checkpoint_type TEXT NOT NULL,
+    action_id INTEGER NOT NULL,
+    checkpoint_type TEXT NOT NULL CHECK (checkpoint_type IN ('pre_delete', 'pre_modify', 'pre_create', 'backup', 'snapshot')),
     state_snapshot TEXT,
-    verified INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (action_id) REFERENCES action_log(id)
+    verified INTEGER DEFAULT 0 CHECK (verified IN (0, 1)),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (action_id) REFERENCES action_log(id) ON DELETE CASCADE
 );
 
 -- Default guardrail rules
@@ -62,9 +70,17 @@ INSERT OR IGNORE INTO rules (rule_name, category, priority, condition, action) V
     ('minimal_change', 'efficiency', 3, 'always', 'Make smallest change that achieves goal'),
     ('no_side_edits', 'focus', 2, 'touching unrelated code', 'STOP and reconsider scope');
 
--- Default domains
-INSERT OR IGNORE INTO domains (name, description, path) VALUES
-    ('hubspot', 'HubSpot CRM integration and automation', 'domains/hubspot'),
-    ('google', 'Google Workspace (Gmail, Drive, Sheets, Apps Script)', 'domains/google'),
-    ('automation', 'General automation scripts and workflows', 'domains/automation'),
-    ('projects', 'Active project workspaces', 'domains/projects');
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_action_log_workspace ON action_log(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_action_log_timestamp ON action_log(timestamp);
+CREATE INDEX IF NOT EXISTS idx_action_log_status ON action_log(status);
+CREATE INDEX IF NOT EXISTS idx_context_workspace ON context(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_context_key ON context(key);
+CREATE INDEX IF NOT EXISTS idx_context_expires ON context(expires_at);
+CREATE INDEX IF NOT EXISTS idx_domains_workspace ON domains(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_action ON checkpoints(action_id);
+CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(category);
+CREATE INDEX IF NOT EXISTS idx_rules_active ON rules(is_active);
+
+-- Default domains (will be created per workspace, not globally)
+-- Note: Domains are now workspace-specific, so these are examples only

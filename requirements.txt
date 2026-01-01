@@ -1,5 +1,5 @@
 # Core dependencies
-sqlite3-python>=1.0.0
+# sqlite3 is part of Python standard library, no package needed
 
 # Development and testing
 ruff>=0.1.0

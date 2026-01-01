@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     description TEXT,
-    project_type TEXT DEFAULT 'general',
+    project_type TEXT DEFAULT 'general' CHECK (project_type IN ('general', 'web', 'data', 'api', 'automation', 'mobile', 'desktop')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -14,28 +14,29 @@ CREATE TABLE IF NOT EXISTS workspaces (
 -- Cursor rules storage
 CREATE TABLE IF NOT EXISTS cursor_rules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    workspace_id INTEGER,
+    workspace_id INTEGER NOT NULL,
     rule_name TEXT NOT NULL,
     description TEXT,
     globs TEXT,
-    rule_type TEXT DEFAULT 'always',
+    rule_type TEXT DEFAULT 'always' CHECK (rule_type IN ('always', 'suggestion', 'warning', 'error')),
     content TEXT NOT NULL,
-    is_active INTEGER DEFAULT 1,
+    is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
 );
 
 -- Integration configurations
 CREATE TABLE IF NOT EXISTS integrations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    workspace_id INTEGER,
+    workspace_id INTEGER NOT NULL,
     integration_type TEXT NOT NULL,
     name TEXT NOT NULL,
-    config_json TEXT,
+    config_json TEXT CHECK (json_valid(config_json) OR config_json IS NULL),
     api_key_env_var TEXT,
-    is_active INTEGER DEFAULT 1,
+    is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    FOREIGN KEY (integration_type) REFERENCES integration_types(type_name)
 );
 
 -- Supported integration types
@@ -63,10 +64,10 @@ CREATE TABLE IF NOT EXISTS templates (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     description TEXT,
-    project_type TEXT,
-    rules_json TEXT,
-    settings_json TEXT,
-    integrations_json TEXT,
+    project_type TEXT CHECK (project_type IN ('general', 'web', 'data', 'api', 'automation', 'mobile', 'desktop') OR project_type IS NULL),
+    rules_json TEXT CHECK (json_valid(rules_json) OR rules_json IS NULL),
+    settings_json TEXT CHECK (json_valid(settings_json) OR settings_json IS NULL),
+    integrations_json TEXT CHECK (json_valid(integrations_json) OR integrations_json IS NULL),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -80,13 +81,13 @@ INSERT OR IGNORE INTO templates (name, description, project_type, rules_json, se
 -- MCP server configurations
 CREATE TABLE IF NOT EXISTS mcp_servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    workspace_id INTEGER,
+    workspace_id INTEGER NOT NULL,
     server_name TEXT NOT NULL,
     server_type TEXT,
-    config_json TEXT,
-    is_active INTEGER DEFAULT 1,
+    config_json TEXT CHECK (json_valid(config_json) OR config_json IS NULL),
+    is_active INTEGER DEFAULT 1 CHECK (is_active IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
 );
 
 -- User preferences
@@ -109,5 +110,11 @@ INSERT OR IGNORE INTO preferences (key, value, description) VALUES
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_rules_workspace ON cursor_rules(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_rules_active ON cursor_rules(is_active);
 CREATE INDEX IF NOT EXISTS idx_integrations_workspace ON integrations(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_integrations_type ON integrations(integration_type);
+CREATE INDEX IF NOT EXISTS idx_integrations_active ON integrations(is_active);
 CREATE INDEX IF NOT EXISTS idx_mcp_workspace ON mcp_servers(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_mcp_active ON mcp_servers(is_active);
+CREATE INDEX IF NOT EXISTS idx_workspaces_project_type ON workspaces(project_type);
+CREATE INDEX IF NOT EXISTS idx_preferences_key ON preferences(key);
